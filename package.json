@@ -1,0 +1,74 @@
+{
+  "name": "regl-pipeline",
+  "version": "0.1.0",
+  "description": "regl-pipeline TODO",
+  "main": "regl-pipeline.js",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/realazthat/regl-pipeline.git"
+  },
+  "bugs": {
+    "url": "https://github.com/realazthat/regl-pipeline/issues"
+  },
+  "author": "Azriel Fasten",
+  "license": "MIT",
+  "semistandard": {
+    "ignore": [
+      "dist/*",
+      "www/*"
+    ]
+  },
+  "dependencies": {
+    "array-range": "^1.0.1",
+    "bower": "^1.6.9",
+    "clone": "1.0.2",
+    "cssy": "^2.2.0",
+    "es6-error": "^3.0.1",
+    "glsl-quad": "1.0.0",
+    "jointjs": "0.9.10",
+    "msgpack-lite": "^0.1.20",
+    "nunjucks": "~1.3.4",
+    "polymerize": "^1.0.0",
+    "regl": "^1.0.0",
+    "resl": "^1.0.1",
+    "the-graph": "^0.4.4"
+  },
+  "devDependencies": {
+    "browserify": "^13.1.0",
+    "disc": "^1.3.2",
+    "glsl-numerify": "1.0.0",
+    "indexhtmlify": "^1.3.0",
+    "jquery-browserify": "^1.8.1",
+    "microseconds": "^0.1.0",
+    "mkdirp": "^0.5.1",
+    "ncp": "^2.0.0",
+    "semistandard": "~8.0.0",
+    "snazzy": "^4.0.0",
+    "tape": "^4.6.0"
+  },
+  "browserify": {
+    "transform": [
+      ["polymerize", { "match": "bower_components.*\\.html$"} ]
+    ]
+  },
+  "keywords": [
+    "webgl",
+    "gl",
+    "graphics",
+    "computer graphics",
+    "opengl",
+    "glsl",
+    "data",
+    "shader",
+    "image processing",
+    "gpgpu",
+    "gpu",
+    "dsp"
+  ],
+  "scripts": {
+    "mytest": "semistandard | snazzy",
+    "build": "npm run build-script && npm run build-demo",
+    "build-script": "mkdir -p ./dist && browserify regl-pipeline.js --standalone regl-pipeline > ./dist/regl-pipeline.js",
+    "build-editor": "node scripts/build-editor.js"
+  }
+}
