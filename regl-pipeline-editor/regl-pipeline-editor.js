@@ -635,25 +635,22 @@ window.addEventListener('polymer-ready', function() {
   });
 
 
-  $('#redify').on('click', function(){
-
-    let selected = editor.selectedNodes;
-
-    for (let nofloNode of selected) {
-      let node = nofloNode.id;
-      editor.addErrorNode(node);
-      editor.updateErrorNodes();
-    }
-
-  });
 
 
   // Get graph button
-  document.getElementById("get").addEventListener("click", function () {
+  $("#get").on("click", function () {
+    var graphJSON = serializeGraph();
+    $('#graph-source-textarea').val(graphJSON);
+    $('#graph-source-modal').modal('show');
+  });
+
+  $("#save-graph-to-string").on("click", function () {
     var graphJSON = JSON.stringify(editor.nofloGraph);
     $('#graph-source-textarea').val(graphJSON);
     $('#graph-source-modal').modal('show');
   });
+
+
 
   function clearGraph(){
     return Promise.resolve()
