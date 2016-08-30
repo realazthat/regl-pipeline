@@ -1,7 +1,5 @@
 
 const clone = require('clone');
-const quad = require('glsl-quad');
-const nunjucks = require('nunjucks');
 const assert = require('assert');
 const ExtendableError = require('es6-error');
 
@@ -22,32 +20,32 @@ const ExtendableError = require('es6-error');
 //    * retreives inputs from input cache
 //    * retreives anything compiled from compile cache
 
-class OutportDoesNotContainData extends ExtendableError{
-  constructor({component, node, outport}) {
+class OutportDoesNotContainData extends ExtendableError {
+  constructor ({component, node, outport}) {
     super(`${component}/${node}:${outport} has no data; you should probably run that node first`);
     this.node = node;
     this.outport = outport;
   }
 }
 
-class InportDoesNotContainCache extends ExtendableError{
-  constructor({component, node, inport}) {
-    super(`${outport}:${component}/${node} has no data; something went wrong`);
+class InportDoesNotContainCache extends ExtendableError {
+  constructor ({component, node, inport}) {
+    super(`${inport}:${component}/${node} has no data; something went wrong`);
     this.node = node;
     this.inport = inport;
   }
 }
 
-function computeEdgesToMap({V,E}){
+function computeEdgesToMap ({V, E}) {
   let result = new Map();
-  
-  for (let v of V){
+
+  for (let v of V) {
     if (!result.has(v)) {
       result.set(v, new Set());
     }
   }
 
-  for (let [u, v] of E){
+  for (let [u, v] of E) {
     if (!result.has(u)) {
       result.set(u, new Set());
     }
@@ -58,10 +56,10 @@ function computeEdgesToMap({V,E}){
   return result;
 }
 
-function computeRoots({V,E}){
+function computeRoots ({V, E}) {
   let S = new Set(V);
 
-  for (let [src, destinations] of E.entries()){
+  for (let [, destinations] of E.entries()) {
     for (let v of destinations) {
       S.delete(v);
     }
@@ -70,11 +68,10 @@ function computeRoots({V,E}){
   return S;
 }
 
-
 // returns a level-order, a list of levels of nodes, in a topological sort.
-function computeLevelOrder({V,E}){
+function computeLevelOrder ({V, E}) {
   // set of nodes with no incoming edges
-  let roots = computeRoots({V,E});
+  let roots = computeRoots({V, E});
 
   if (roots.size === 0) {
     throw new Error('Graph has no roots!');
@@ -84,31 +81,29 @@ function computeLevelOrder({V,E}){
   let levels = [Array.from(roots)];
   let count = roots.size;
 
-
   // count how many parents each node has.
-  let parents = new Map(Array.from(V).map((v) => [v, (0|0)]));
+  let parents = new Map(Array.from(V).map((v) => [v, (0 | 0)]));
 
-  for (let [u,destinations] of E.entries()){
+  for (let [, destinations] of E.entries()) {
     for (let v of destinations) {
-      parents.set(v, (parents.get(v)|0) + (1|0));
+      parents.set(v, (parents.get(v) | 0) + (1 | 0));
     }
   }
-
 
   while (tovisit.size) {
     let level = new Set();
 
-    for (let v of tovisit){
+    for (let v of tovisit) {
       for (let child of E.get(v)) {
-        let childParents = parents.get(child)|0;
+        let childParents = parents.get(child) | 0;
 
         if (childParents <= 0) {
           throw new Error('Something is wrong with this graph ...');
         }
 
-        childParents -= (1|0);
+        childParents -= (1 | 0);
 
-        parents.set(child, childParents|0);
+        parents.set(child, childParents | 0);
 
         if (childParents === 0) {
           level.add(child);
@@ -121,8 +116,6 @@ function computeLevelOrder({V,E}){
     tovisit = level;
   }
 
-
-
   if (count !== V.size) {
     throw new Error('Something is wrong with this graph ...');
   }
@@ -131,7 +124,7 @@ function computeLevelOrder({V,E}){
 }
 
 class NodeExecutionContext {
-  constructor({node,outport,dag,runtime}) {
+  constructor ({node, outport, dag, runtime}) {
     this.dag = dag;
     this.regl = dag.regl;
     this.resl = dag.resl;
@@ -140,7 +133,7 @@ class NodeExecutionContext {
     this.runtime = runtime;
   }
 
-  compiled(outport = null){
+  compiled (outport = null) {
     let dag = this.dag;
     let node = this.node;
 
@@ -150,13 +143,13 @@ class NodeExecutionContext {
 
     let metadata = this.dag.metadata({node});
     if (!metadata || !metadata.cached || !metadata.cached.compiled || !metadata.cached.compiled[outport]) {
-      throw new Error(`No compiled values available for ${dag.portStr({node, outport})}`)
+      throw new Error(`No compiled values available for ${dag.portStr({node, outport})}`);
     }
 
     return metadata.cached.compiled[outport].value;
   }
 
-  checkInport({inport}){
+  checkInport ({inport}) {
     let dag = this.dag;
     let node = this.node;
     let outport = this.outport;
@@ -171,36 +164,36 @@ class NodeExecutionContext {
     }
   }
 
-  usage(inport) {
+  usage (inport) {
     this.checkInport({inport});
 
     let dag = this.dag;
     let node = this.node;
 
-    let {usage} = dag.getCachedInport({node,inport});
+    let {usage} = dag.getCachedInport({node, inport});
 
     return usage;
   }
 
-  connected(inport) {
+  connected (inport) {
     this.checkInport({inport});
 
     let dag = this.dag;
     let node = this.node;
 
-    let {source} = dag.getCachedInport({node,inport});
+    let {source} = dag.getCachedInport({node, inport});
 
     return source !== 'none';
   }
 
-  require(inport) {
+  require (inport) {
     this.checkInport({inport});
 
     let dag = this.dag;
     let node = this.node;
 
     if (!this.connected(inport)) {
-      throw new Error(`${dag.portStr({node,inport})} is not connected`);
+      throw new Error(`${dag.portStr({node, inport})} is not connected`);
     }
 
     return this.evaluate(inport);
@@ -209,30 +202,30 @@ class NodeExecutionContext {
   /**
    * Statically require.
    */
-  statically(inport) {
+  statically (inport) {
     this.checkInport({inport});
 
     let dag = this.dag;
     let node = this.node;
 
     if (!this.connected(inport)) {
-      throw new Error(`${dag.portStr({node,inport})} is not connected`);
+      throw new Error(`${dag.portStr({node, inport})} is not connected`);
     }
 
-    if (dag.effectiveInportUsage({node,inport}) !== 'static') {
-      throw new Error(`${dag.portStr({node,inport})} cannot be evaluated statically`);
+    if (dag.effectiveInportUsage({node, inport}) !== 'static') {
+      throw new Error(`${dag.portStr({node, inport})} cannot be evaluated statically`);
     }
 
     return this.evaluate(inport);
   }
 
-  evaluate(inport) {
+  evaluate (inport) {
     this.checkInport({inport});
 
     let dag = this.dag;
     let node = this.node;
 
-    let {usage, value} = dag.getCachedInport({node,inport});
+    let {usage, value} = dag.getCachedInport({node, inport});
 
     if (this.runtime === 'static' && usage === 'dynamic') {
       // TODO: throw an error here?
@@ -244,22 +237,24 @@ class NodeExecutionContext {
 }
 
 class DAG {
-  constructor({regl,resl,getNofloGraph,pipeline}) {
+  constructor ({regl, resl, getNofloGraph, pipeline}) {
     this.regl = regl;
     this.resl = resl;
     this.getNofloGraph = getNofloGraph;
     this.pipeline = pipeline;
-    this.frame = 0|0;
-    this.counter = 0|0;
+    this.frame = 0 | 0;
+    this.counter = 0 | 0;
   }
 
-  component({node}){
+  component ({node}) {
     return this._nofloNode({node}).component;
   }
 
-  componentInfo({node = null, component = null}){
-    if (component === null)
+  componentInfo ({node = null, component = null}) {
+    if (component === null) {
       component = this.component({node});
+    }
+
     let componentInfo = this.pipeline.components[component];
     if (!componentInfo) {
       throw new Error(`No pipeline component found named "${component}"`);
@@ -268,21 +263,19 @@ class DAG {
     return componentInfo;
   }
 
-  inports({node = null, component = null}) {
-
-    let componentInfo = this.componentInfo({node,component});
+  inports ({node = null, component = null}) {
+    let componentInfo = this.componentInfo({node, component});
 
     return componentInfo.inports.map((inportInfo) => inportInfo.name);
   }
 
-  outports({node = null, component = null}) {
-
-    let componentInfo = this.componentInfo({node,component});
+  outports ({node = null, component = null}) {
+    let componentInfo = this.componentInfo({node, component});
 
     return componentInfo.outports.map((outportInfo) => outportInfo.name);
   }
 
-  depends({node = null, component = null, outport}) {
+  depends ({node = null, component = null, outport}) {
     let componentOutportInfo = this.componentOutportInfo({node, component, outport});
 
     if (componentOutportInfo.pass) {
@@ -297,7 +290,7 @@ class DAG {
     return clone(componentOutportInfo.depends);
   }
 
-  componentInportInfo({node = null, component = null, inport}){
+  componentInportInfo ({node = null, component = null, inport}) {
     let componentInfo = this.componentInfo({node, component});
 
     for (let inportInfo of componentInfo.inports) {
@@ -309,7 +302,7 @@ class DAG {
     throw new Error(`Cannot find inport "${inport}" on node "${node}" (of component ${this.component({node})}`);
   }
 
-  componentOutportInfo({node = null, component = null, outport}){
+  componentOutportInfo ({node = null, component = null, outport}) {
     let componentInfo = this.componentInfo({node, component});
 
     for (let outportInfo of componentInfo.outports) {
@@ -321,42 +314,42 @@ class DAG {
     throw new Error(`Cannot find inport "${outport}" on node "${node}" (of component ${this.component({node})}`);
   }
 
-  checkInport({node, inport}) {
+  checkInport ({node, inport}) {
     // this will error if the inport does not exist
-    let componentInportInfo = this.componentInportInfo({node, inport});
+    this.componentInportInfo({node, inport});
   }
 
-  checkOutport({node, outport}) {
+  checkOutport ({node, outport}) {
     // this will error if the outport does not exist
-    let componentOutportInfo = this.componentOutportInfo({node, outport});
+    this.componentOutportInfo({node, outport});
   }
 
-  hasAttached({node, inport}) {
+  hasAttached ({node, inport}) {
     this.checkInport({node, inport});
 
-    let nofloInitialValue = this._nofloGetInitialValue({node,inport});
+    let nofloInitialValue = this._nofloGetInitialValue({node, inport});
     return nofloInitialValue !== undefined;
   }
 
-  checkAttachedUsage({usage}) {
-    if (usage !== 'static' && usage !== 'dynamic')
+  checkAttachedUsage ({usage}) {
+    if (usage !== 'static' && usage !== 'dynamic') {
       throw new Error(`Cannot set usage for attached value to "${usage}"; only 'static' and 'dynamic' are valid.`);
+    }
   }
 
-  setAttached({node, inport, value, usage}) {
+  setAttached ({node, inport, value, usage}) {
     // this.checkInport({node, inport});
     this.checkAttachedUsage({usage});
 
-    let inportUsage = this.componentInportInfo({node,inport}).usage;
+    let inportUsage = this.componentInportInfo({node, inport}).usage;
     if (inportUsage === 'static' && usage === 'dynamic') {
-      throw new Error(`Cannot set "${usage}" on ${this.portStr({node,inport})}, inport is typed as usage ${inportUsage}`);
+      throw new Error(`Cannot set "${usage}" on ${this.portStr({node, inport})}, inport is typed as usage ${inportUsage}`);
     }
 
     let metadata = this.metadata({node, setup: true});
     if (metadata.attached === undefined) {
       metadata.attached = {};
     }
-
 
     let staticChanged = metadata.attached[inport].staticChanged;
     let valueChanged = this.frame;
@@ -377,18 +370,17 @@ class DAG {
 
     this.getNofloGraph().removeInitial(node, inport);
     this.getNofloGraph().addInitial(value, node, inport, {});
-
   }
 
-  getAttached({node, inport}) {
-    let value = this._nofloGetInitialValue({node,inport});
+  getAttached ({node, inport}) {
+    let value = this._nofloGetInitialValue({node, inport});
     let metadata = this.metadata({node});
 
     let usage = 'static';
-    let valueChanged = undefined;
-    let staticChanged = undefined;
+    let valueChanged;
+    let staticChanged;
 
-    if (metadata !== undefined && metadata.attached !== undefined && metadata.attached[inport] !== undefined){
+    if (metadata !== undefined && metadata.attached !== undefined && metadata.attached[inport] !== undefined) {
       usage = metadata.attached[inport].usage;
       valueChanged = metadata.attached[inport].valueChanged;
       staticChanged = metadata.attached[inport].staticChanged;
@@ -397,16 +389,16 @@ class DAG {
     return {value, usage, valueChanged, staticChanged};
   }
 
-  removeAttached({node,inport}) {
+  removeAttached ({node, inport}) {
     let metadata = this.metadata({node});
-    if (metadata !== undefined && metadata.attached !== undefined && metadata.attached[inport] !== undefined){
+    if (metadata !== undefined && metadata.attached !== undefined && metadata.attached[inport] !== undefined) {
       delete metadata.attached[inport];
     }
 
     this.getNofloGraph().removeInitial(node, inport);
   }
 
-  hasInportConnection({node, inport}) {
+  hasInportConnection ({node, inport}) {
     for (let nofloEdge of this.getNofloGraph().edges) {
       if (nofloEdge.to.node === node && nofloEdge.to.port === inport) {
         return true;
@@ -414,9 +406,8 @@ class DAG {
     }
     return false;
   }
-  
 
-  getInportConnection({node, inport}) {
+  getInportConnection ({node, inport}) {
     for (let nofloEdge of this.getNofloGraph().edges) {
       if (nofloEdge.to.node === node && nofloEdge.to.port === inport) {
         return {outnode: nofloEdge.from.node, outport: nofloEdge.from.port};
@@ -425,8 +416,7 @@ class DAG {
     return undefined;
   }
 
-
-  _nofloGetInitialValue({node, inport}) {
+  _nofloGetInitialValue ({node, inport}) {
     for (let initializer of this.getNofloGraph().initializers) {
       if (initializer.to.node === node && initializer.to.port === inport) {
         return initializer.from.data;
@@ -435,7 +425,7 @@ class DAG {
     return undefined;
   }
 
-  _nofloNode({node}) {
+  _nofloNode ({node}) {
     let nofloNode = this.getNofloGraph().getNode(node);
     if (!nofloNode) {
       throw new Error(`No node found with id "${node}"`);
@@ -444,7 +434,7 @@ class DAG {
     return nofloNode;
   }
 
-  metadata({node, setup = false}) {
+  metadata ({node, setup = false}) {
     let metadata = this._nofloNode({node}).metadata;
 
     if (setup) {
@@ -486,7 +476,7 @@ class DAG {
     return metadata;
   }
 
-  portStr({node, inport = null, outport = null}) {
+  portStr ({node, inport = null, outport = null}) {
     if (inport !== null) {
       return `${inport}:${this.component({node})}/${node}`;
     }
@@ -494,12 +484,12 @@ class DAG {
     return `${this.component({node})}/${node}:${outport}`;
   }
 
-  connectedInportUsage({node, inport}){
+  connectedInportUsage ({node, inport}) {
     let {outnode, outport} = this.getInportConnection({node, inport});
-    let {value, usage, valueChanged, staticChanged, checked} = this.getCachedOutport({node: outnode, outport});
+    let {usage} = this.getCachedOutport({node: outnode, outport});
 
     if (usage !== 'static' && usage !== 'dynamic') {
-      throw new Error(`No cached output usage!` +
+      throw new Error('No cached output usage!' +
                       ` Node ${this.portStr({node, inport})}` +
                       ` is connected to ${this.portStr({node, outport})}`);
     }
@@ -507,7 +497,7 @@ class DAG {
     return usage;
   }
 
-  effectiveInportUsage({node, inport}) {
+  effectiveInportUsage ({node, inport}) {
     let componentInportInfo = this.componentInportInfo({node, inport});
 
     if (componentInportInfo.usage === 'static') {
@@ -515,9 +505,8 @@ class DAG {
     } else if (componentInportInfo.usage === 'dynamic') {
       return 'dynamic';
     } else if (componentInportInfo.usage === undefined || componentInportInfo.usage === 'inherit') {
-      
-      if (this.hasAttached({node,inport})) {
-        let {usage} = this.getAttached({node,inport});
+      if (this.hasAttached({node, inport})) {
+        let {usage} = this.getAttached({node, inport});
         assert(usage === 'static' || usage === 'dynamic');
         return usage;
       }
@@ -532,10 +521,10 @@ class DAG {
       return 'static';
       // throw new Error(`Node "${node}" has no connection at inport "${inport}"`);
     }
-    throw new Error(`Component "${this.component({node})}" has an invalid usage "${usage}"`);
+    throw new Error(`Component "${this.component({node})}" has an invalid usage "${componentInportInfo.usage}"`);
   }
 
-  effectiveOutportUsage({node, outport}) {
+  effectiveOutportUsage ({node, outport}) {
     let componentOutportInfo = this.componentOutportInfo({node, outport});
 
     if (componentOutportInfo.usage === 'static') {
@@ -543,7 +532,6 @@ class DAG {
     } else if (componentOutportInfo.usage === 'dynamic') {
       return 'dynamic';
     } else if (componentOutportInfo.usage === undefined || componentOutportInfo.usage === 'inherit') {
-      
       let depends = this.depends({node, outport});
 
       if (depends.length === 0) {
@@ -551,8 +539,7 @@ class DAG {
       }
 
       for (let inport of depends) {
-
-        if (this.hasAttached({node,inport})) {
+        if (this.hasAttached({node, inport})) {
           let {usage} = this.getAttached({node, inport});
           if (usage === 'dynamic') {
             return 'dynamic';
@@ -567,21 +554,18 @@ class DAG {
             return 'dynamic';
           }
         }
-
       }
-
 
       return 'static';
     }
-    throw new Error(`Component "${this.component({node})}" has an invalid usage "${usage}"`);
+    throw new Error(`Component "${this.component({node})}" has an invalid usage "${componentOutportInfo.usage}"`);
   }
 
-
-  componentHasInport({component, inport}) {
+  componentHasInport ({component, inport}) {
     let componentInfo = this.componentInfo({component});
 
-    for (let inportInfo of componentInfo.inports){
-      if (inportInfo.name === inport){
+    for (let inportInfo of componentInfo.inports) {
+      if (inportInfo.name === inport) {
         return true;
       }
     }
@@ -589,41 +573,42 @@ class DAG {
     return false;
   }
 
-  hasInport({node = null, component = null, inport}) {
-    if (component === null)
-    {
+  hasInport ({node = null, component = null, inport}) {
+    if (component === null) {
       component = this.component({node});
     }
 
     return this.componentHasInport({component, inport});
   }
 
-  componentSanity({component}) {
+  componentSanity ({component}) {
     let componentInfo = this.componentInfo({component});
 
-    for (let componentOutportInfo of componentInfo.outports){
+    for (let componentOutportInfo of componentInfo.outports) {
       let outport = componentOutportInfo.name;
 
       let depends = componentOutportInfo.depends;
       if (componentOutportInfo.pass === true) {
         // make sure that if it passes, then it must have a corresponding inport of the same name.
-        if (!this.hasInport({node, inport: outport})) {
+        if (!this.hasInport({component, inport: outport})) {
           throw new Error(`Component "${component}" specifies outport "${outport}" to` +
-                          ` {pass: true}, but does not have a corresponding inport`)
+                          ' {pass: true}, but does not have a corresponding inport');
         }
 
         if (componentOutportInfo.hasOwnProperty('depends')) {
           throw new Error(`Component "${component}" specifies outport "${outport}" to` +
-                          ` {pass: true}, but also specifies a "depends" property`)
+                          ' {pass: true}, but also specifies a "depends" property');
         }
 
         if (componentOutportInfo.hasOwnProperty('usage')) {
           throw new Error(`Component "${component}" specifies outport "${outport}" to` +
-                          ` {pass: true}, but also specifies a "usage" property`)
+                          ' {pass: true}, but also specifies a "usage" property');
         }
 
-        let componentInportInfo = this.componentInportInfo({component, inport: depend});
-
+        for (let depend of depends) {
+          // check for error
+          this.componentInportInfo({component, inport: depend});
+        }
 
         return;
       }
@@ -649,24 +634,21 @@ class DAG {
 
           if (componentInportInfo.usage !== 'static') {
             throw new Error(`Component "${component}" has a usage of "${componentOutportInfo.usage}",` +
-                            ` while it depends on an inport` +
+                            ' while it depends on an inport' +
                             ` "${depend}" that has a usage of "${componentInportInfo.usage}"`);
           }
         }
       }
-
     }
   }
 
-  nodeSanity({node}) {
+  nodeSanity ({node}) {
     let component = this.component({node});
     this.componentSanity({component});
-    let componentInfo = this.componentInfo({node});
-
-
+    this.componentInfo({node});
   }
 
-  evaluateInportSource({node, inport}) {
+  evaluateInportSource ({node, inport}) {
     if (this.hasInportConnection({node, inport})) {
       let {outnode, outport} = this.getInportConnection({node, inport});
       return `-${outnode}-${outport}-${node}-${inport}`;
@@ -678,9 +660,8 @@ class DAG {
     }
   }
 
-  getCachedOutport({node, outport}){
+  getCachedOutport ({node, outport}) {
     let metadata = this.metadata({node, setup: true});
-
 
     let valueChanged = metadata.cached.outports[outport].valueChanged;
     let staticChanged = metadata.cached.outports[outport].staticChanged;
@@ -689,39 +670,38 @@ class DAG {
     let checked = metadata.cached.outports[outport].checked;
 
     if (staticChanged === undefined) {
-      throw new OutportDoesNotContainData({node, outport})
+      throw new OutportDoesNotContainData({node, outport});
     }
 
     return {value, usage, valueChanged, staticChanged, checked};
   }
 
-
-  pullStatic({node}) {
+  pullStatic ({node}) {
     let metadata = this.metadata({node, setup: true});
 
-    for (let inport of this.inports({node})){
-      let usage = this.effectiveInportUsage({node,inport});
-      let source = this.evaluateInportSource({node,inport});
+    for (let inport of this.inports({node})) {
+      let usage = this.effectiveInportUsage({node, inport});
+      let source = this.evaluateInportSource({node, inport});
       let staticChanged = metadata.cached.inports[inport].staticChanged;
       let checked = this.frame;
-      let value = undefined;
+      let value;
 
       if (staticChanged === undefined) {
         staticChanged = -1;
       }
 
-      if (this.hasInportConnection({node,inport})) {
-        let {outnode, outport} = this.getInportConnection({node,inport});
-        let newStaticChanged = undefined;
-        let newValue = undefined;
-        ({value: newValue, usage, staticChanged: newStaticChanged} = this.getCachedOutport({node: outnode,outport}));
+      if (this.hasInportConnection({node, inport})) {
+        let {outnode, outport} = this.getInportConnection({node, inport});
+        let newStaticChanged;
+        let newValue;
+        ({value: newValue, usage, staticChanged: newStaticChanged} = this.getCachedOutport({node: outnode, outport}));
 
         if (usage === 'static') {
           value = newValue;
         }
         staticChanged = Math.max(staticChanged, newStaticChanged);
-      } else if (this.hasAttached({node,inport})) {
-        let {value: newValue, usage: newUsage, staticChanged: newStaticChanged, valueChanged} = this.getAttached({node,inport});
+      } else if (this.hasAttached({node, inport})) {
+        let {value: newValue, usage: newUsage, staticChanged: newStaticChanged, valueChanged} = this.getAttached({node, inport});
         assert(usage === newUsage);
         if (usage === 'static') {
           value = newValue;
@@ -750,19 +730,19 @@ class DAG {
     }
   }
 
-  pullDynamic({node}) {
+  pullDynamic ({node}) {
     let metadata = this.metadata({node, setup: true});
 
-    for (let inport of this.inports({node})){
-      let usage = this.effectiveInportUsage({node,inport});
+    for (let inport of this.inports({node})) {
+      let usage = this.effectiveInportUsage({node, inport});
 
       if (usage !== 'dynamic') {
         continue;
       }
 
-      let source = this.evaluateInportSource({node,inport});
+      // let source = this.evaluateInportSource({node, inport});
       let valueChanged = metadata.cached.inports[inport].valueChanged;
-      let value = undefined;
+      let value;
 
       // TODO: can do a bunch of sanity testing here, make sure staticPull() happened,
       // make sure things match up
@@ -771,18 +751,16 @@ class DAG {
         valueChanged = -1;
       }
 
-
-
-       if (this.hasInportConnection({node,inport})) {
-        let {outnode, outport} = this.getInportConnection({node,inport});
-        let newValueChanged = undefined;
-        let newValue = undefined;
-        ({value: newValue, usage, valueChanged: newValueChanged} = this.getCachedOutport({node: outnode,outport}));
+      if (this.hasInportConnection({node, inport})) {
+        let {outnode, outport} = this.getInportConnection({node, inport});
+        let newValueChanged;
+        let newValue;
+        ({value: newValue, usage, valueChanged: newValueChanged} = this.getCachedOutport({node: outnode, outport}));
 
         value = newValue;
         valueChanged = Math.max(valueChanged, newValueChanged);
-      } else if (this.hasAttached({node,inport})) {
-        let {value: newValue, usage: newUsage, staticChanged, valueChanged: newValueChanged} = this.getAttached({node,inport});
+      } else if (this.hasAttached({node, inport})) {
+        let {value: newValue, usage: newUsage, valueChanged: newValueChanged} = this.getAttached({node, inport});
         assert(usage === newUsage);
         value = newValue;
         valueChanged = Math.max(valueChanged, newValueChanged);
@@ -797,27 +775,25 @@ class DAG {
     }
   }
 
-
-  getCachedInport({node,inport}) {
+  getCachedInport ({node, inport}) {
     let metadata = this.metadata({node, setup: true});
 
-    let source = undefined;
-    let value = undefined;
-    let usage = undefined;
-    let staticChanged = undefined;
-    let valueChanged = undefined;
-    let checked = undefined;
+    let source;
+    let value;
+    let usage;
+    let staticChanged;
+    let valueChanged;
+    let checked;
 
     if (metadata.cached.inports[inport] === undefined) {
-      throw new InportDoesNotContainCache({node,inport});
+      throw new InportDoesNotContainCache({node, inport});
     }
 
-    ({value,source,usage,staticChanged,valueChanged,checked} = metadata.cached.inports[inport]);
-    return {value,source,usage,staticChanged,valueChanged,checked};
-    
+    ({value, source, usage, staticChanged, valueChanged, checked} = metadata.cached.inports[inport]);
+    return {value, source, usage, staticChanged, valueChanged, checked};
   }
 
-  setCachedInport({node,inport,value,usage,staticChanged,valueChanged,source}) {
+  setCachedInport ({node, inport, value, usage, staticChanged, valueChanged, source}) {
     let metadata = this.metadata({node, setup: true});
 
     metadata.cached.inports[inport].value = value;
@@ -828,32 +804,28 @@ class DAG {
     metadata.cached.inports[inport].checked = this.frame;
   }
 
-
-
-  initializeNode({node}) {
+  initializeNode ({node}) {
     for (let inport of this.inports({node})) {
-      this.resetInportInitial({node,inport});
+      this.resetInportInitial({node, inport});
     }
   }
 
-  resetInportInitial({node,inport}) {
-    let componentInportInfo = this.componentInportInfo({node,inport});
+  resetInportInitial ({node, inport}) {
+    let componentInportInfo = this.componentInportInfo({node, inport});
 
     if (componentInportInfo.hasOwnProperty('initial')) {
       let value = clone(componentInportInfo.initial);
       let usage = 'static';
-      this.setAttached({node,inport,value,usage});
+      this.setAttached({node, inport, value, usage});
     }
   }
 
-
-  needsRecompilation({node, outport}) {
+  needsRecompilation ({node, outport}) {
     // if any of the depends had a change in staticness more recently than the compiled stuff, then compiled output is dirty
     // if any of the static depends had a change in connection more recently than the compiled stuff, then the compiled output is dirty
     // if any of the static depends has a value changed more recently than the compiled stuff, then the compiled output is dirty
 
     let metadata = this.metadata({node, setup: true});
-
 
     let compiledFrame = metadata.cached.compiled[outport].staticChanged;
 
@@ -862,7 +834,7 @@ class DAG {
     }
 
     for (let inport of this.depends({node, outport})) {
-      let {staticChanged} = this.getCachedInport({node,inport});
+      let {staticChanged} = this.getCachedInport({node, inport});
 
       if (staticChanged > compiledFrame) {
         return true;
@@ -872,13 +844,12 @@ class DAG {
     return false;
   }
 
-  needsReexecution({node, outport, runtime}) {
+  needsReexecution ({node, outport, runtime}) {
     // if any of the depends had a change in staticness more recently than the compiled stuff, then compiled output is dirty
     // if any of the static depends had a change in connection more recently than the compiled stuff, then the compiled output is dirty
     // if any of the static depends has a value changed more recently than the compiled stuff, then the compiled output is dirty
 
-
-    if (runtime === 'dynamic'){
+    if (runtime === 'dynamic') {
       return true;
     }
     let metadata = this.metadata({node, setup: true});
@@ -889,12 +860,12 @@ class DAG {
       return true;
     }
 
-    if (this.effectiveOutportUsage({node,outport}) !== metadata.cached.outports[outport].usage){
+    if (this.effectiveOutportUsage({node, outport}) !== metadata.cached.outports[outport].usage) {
       return true;
     }
 
     for (let inport of this.depends({node, outport})) {
-      let {staticChanged} = this.getCachedInport({node,inport});
+      let {staticChanged} = this.getCachedInport({node, inport});
 
       if (staticChanged > compiledFrame) {
         return true;
@@ -904,29 +875,26 @@ class DAG {
     return false;
   }
 
-
-  clearCache({node}) {
-    let metadata = dag.metadata({node});
+  clearCache ({node}) {
+    let metadata = this.metadata({node});
 
     if (metadata.hasOwnProperty('cached')) {
       delete metadata.cached;
     }
   }
 
-  saveCompiled({node, outport, compiled}) {
-
-    let metadata = dag.metadata({node, setup: true});
+  saveCompiled ({node, outport, compiled}) {
+    let metadata = this.metadata({node, setup: true});
 
     metadata.cached.compiled[outport].value = compiled;
     metadata.cached.compiled[outport].staticChanged = this.frame;
     metadata.cached.compiled[outport].checked = this.frame;
   }
 
-  staticSave({node, outport, value}) {
+  staticSave ({node, outport, value}) {
+    let metadata = this.metadata({node, setup: true});
 
-    let metadata = dag.metadata({node, setup: true});
-
-    let usage = this.effectiveOutportUsage({node,outport});
+    let usage = this.effectiveOutportUsage({node, outport});
 
     metadata.cached.outports[outport].value = value;
     metadata.cached.outports[outport].usage = usage;
@@ -935,9 +903,8 @@ class DAG {
     metadata.cached.outports[outport].checked = this.frame;
   }
 
-  dynamicSave({node, outport, value}) {
-
-    let metadata = dag.metadata({node, setup: true});
+  dynamicSave ({node, outport, value}) {
+    let metadata = this.metadata({node, setup: true});
 
     // TODO: assert sanity
 
@@ -946,21 +913,16 @@ class DAG {
     metadata.cached.outports[outport].checked = this.frame;
   }
 
-
-  compile({node, force = false}) {
+  compile ({node, force = false}) {
     let dag = this;
 
     return Promise.resolve()
-      .then(function(){
-        let frame = dag.frame;
-        let component = dag.component({node});
+      .then(function () {
         let metadata = dag.metadata({node, setup: true});
         let promises = [];
 
         for (let outport of dag.outports({node})) {
-          let componentOutportInfo = dag.componentOutportInfo({node, outport});
           let componentInfo = dag.componentInfo({node, outport});
-          let depends = new Set(componentOutportInfo.depends);
 
           if (componentInfo.compile === undefined) {
             throw new Error('Component is malformed: there is no `compile` dictionary');
@@ -977,92 +939,60 @@ class DAG {
 
           let compile = componentInfo.compile[outport];
 
-
-          if (!compile){
+          if (!compile) {
             continue;
           }
-
-
 
           let promise = Promise.resolve();
 
           // console.log(`outport ${outport} compile:`,compile);
           // console.log(`dag.needsRecompilation({"${node}", "${outport}"}):`, dag.needsRecompilation({node, outport}));
           if (dag.needsRecompilation({node, outport})) {
-            
             // TODO: should we clear the compiled cache now?
-            let context = new NodeExecutionContext({node,outport,dag,runtime: 'static'});
-            promise = promise.then(function() {
-                        return Promise.resolve(compile({context}));
-                      })
-                      .then(function(compiled) {
+            let context = new NodeExecutionContext({node, outport, dag, runtime: 'static'});
+            promise = promise.then(function () {
+              return Promise.resolve(compile({context}));
+            })
+                      .then(function (compiled) {
                         console.log('saving compiled: ', compiled);
                         dag.saveCompiled({node, outport, compiled});
                         return Promise.resolve();
                       });
           }
           promises.push(promise);
-
-
-          /*
-          let usage = dag.effectiveOutportUsage({node, outport});
-
-
-          let execute = componentInfo.execute[outport];
-
-          if (execute === undefined) {
-            throw new Error(`Component is malformed: there is no \`execute\` routine for the outport ${outport}`);
-          }
-
-          // if this is a static outport, run the execute(), because it is static
-          if (usage === 'static' && execute) {
-            promise.then(function() { return Promise.resolve(execute({context})); })
-                   .then(function(result) { dag.saveStaticValue({node, outport, result}); });
-          }
-          */
-
-        
         }
 
-
-        return Promise.all(promises)
-                    // .catch(function(err){
-                    //   console.log('IN THE ALL');
-                    //   setTimeout(function(){
-                    //     throw err;
-                    //   })
-
-                    // });
+        return Promise.all(promises);
       }); // return Promise.resolve().then( function() { ..
   }
 
-  incFrame() {
-    let frame = this.frame|0;
-    this.frame = (this.frame + 1)|0;
+  incFrame () {
+    let frame = this.frame | 0;
+    this.frame = (this.frame + 1) | 0;
     return frame;
   }
 
-  incCounter() {
-    let counter = this.counter|0;
-    this.counter = (this.counter + 1)|0;
+  incCounter () {
+    let counter = this.counter | 0;
+    this.counter = (this.counter + 1) | 0;
     return counter;
   }
 
-  levelOrdering(){
+  levelOrdering () {
     let V = this.getNofloGraph().nodes.map((nofloNode) => nofloNode.id);
     let E = this.getNofloGraph().edges.map((nofloEdge) => [nofloEdge.from.node, nofloEdge.to.node]);
     V = new Set(V);
-    E = computeEdgesToMap({V,E});
+    E = computeEdgesToMap({V, E});
 
-    let levelOrder = computeLevelOrder({V,E});
+    let levelOrder = computeLevelOrder({V, E});
     return levelOrder;
   }
 
-  ordering() {
+  ordering () {
     let levelOrder = this.levelOrdering();
 
     let order = [];
-    for (let level of levelOrder){
+    for (let level of levelOrder) {
       for (let node of level) {
         order.push(node);
       }
@@ -1071,36 +1001,31 @@ class DAG {
     return order;
   }
 
-
-  visitLevel({level, visitor, parallel, failure = null}) {
+  visitLevel ({level, visitor, parallel, failure = null}) {
     // turn this into a promise returning function
     return Promise.resolve()
-      .then(function(){
-
-
+      .then(function () {
         // turn the `visitor` callback into a promise returning function, if it doesn't return
         // a promise already.
-        function visit(node) {
+        function visit (node) {
           return Promise.resolve()
-                        .then(function(){
+                        .then(function () {
                           return Promise.resolve(visitor(node));
                         });
         }
 
         if (parallel) {
-          let visited = new Set();
-          let tovisit = new Set(level);
-          let promises = level.map(function(node){
+          let promises = level.map(function (node) {
             return visit(node);
           });
 
           // returns a list of promises that will return a result list in the form of
           // [ {result: ..}, {result: ..}, {error: ..}]
           // in other words, turns off the fail-fast behavior of Promise.all()
-          promises.map((p) =>    p.then((r) => {result: r}).catch(e => ({error: e}))    )
+          promises.map((p) => p.then((r) => ({ result: r })).catch(e => ({error: e})));
 
           return Promise.all(promises)
-            .then(function(results){
+            .then(function (results) {
               for (let index = 0; index < results.length; ++index) {
                 let result = results[index];
                 let node = level[index];
@@ -1109,7 +1034,7 @@ class DAG {
                 }
               }
 
-              // now throw the first 
+              // now throw the first
               for (let result of results) {
                 if (result.error && failure) {
                   throw result.error;
@@ -1121,22 +1046,21 @@ class DAG {
           //   I hate you JS
           //   this forces each node to complete before running the next one.
           //   an actual for-loop would start all the nodes being visited at once.
-          return level.reduce(function (promise,node) {
-              return promise.then( function (){
-                return visit(node).catch(function(err){
-                  if (failure) {
-                    failure(err, node);
-                  }
+          return level.reduce(function (promise, node) {
+            return promise.then(function () {
+              return visit(node).catch(function (err) {
+                if (failure) {
+                  failure(err, node);
+                }
 
-                  throw err;
-                });
-              })
-            },
+                throw err;
+              });
+            });
+          },
             Promise.resolve()
           );
         }
-
-      }) // Promise.resolve().then(function() {
+      }); // Promise.resolve().then(function() {
   }
 
   /**
@@ -1145,7 +1069,7 @@ class DAG {
    * Note that visitor might be called in parallel on independent nodes.
    * To prevent this, specifay `parallel: false`.
    */
-  orderedVisit({visitor, failure = null, parallel = true}) {
+  orderedVisit ({visitor, failure = null, parallel = true}) {
     let dag = this;
 
     let levelOrder = dag.levelOrdering();
@@ -1154,68 +1078,63 @@ class DAG {
       //   I hate you JS
       //   this forces each level to complete before running the next one.
       //   an actual for-loop would start all the nodes compiling/executing at once.
-    return levelOrder.reduce(function (promise,level) {
-        return promise.then( function (){
-          return dag.visitLevel({level, visitor, failure, parallel});
-        });
-      },
+    return levelOrder.reduce(function (promise, level) {
+      return promise.then(function () {
+        return dag.visitLevel({level, visitor, failure, parallel});
+      });
+    },
       Promise.resolve()
     );
   }
 
-  compileFrame({force, failure = null, parallel = true}) {
+  compileFrame ({force, failure = null, parallel = true}) {
     let dag = this;
 
     return Promise.resolve()
-      .then(function(){
+      .then(function () {
         dag.incFrame();
 
-        function visitor(node){
+        function visitor (node) {
           return Promise.resolve()
-            .then(function(){
+            .then(function () {
               dag.pullStatic({node});
               return dag.compile({node, force});
             })
-            .then(function(){
+            .then(function () {
               return dag.execute({node, runtime: 'static', force});
-            })
+            });
         }
 
         return dag.orderedVisit({visitor, failure, parallel});
       });
   }
 
-  executeFrame({failure, parallel = true}) {
-    let dag = this;
-
-    return Promise.resolve().
-      then(function(){
-        dag.incFrame();
-
-        function visitor(node){
-          return Promise.resolve()
-            .then(function(){
-              dag.pullDynamic({node});
-              return dag.execute({node, runtime: 'dynamic'});
-            })
-
-        }
-
-        return dag.orderedVisit({visitor, failure, parallel});
-      });
-  }
-
-  execute({node, runtime, force = false}) {
+  executeFrame ({failure, parallel = true}) {
     let dag = this;
 
     return Promise.resolve()
-      .then(function(){
+      .then(function () {
+        dag.incFrame();
 
-        let frame = dag.frame;
-        let component = dag.component({node});
+        function visitor (node) {
+          return Promise.resolve()
+            .then(function () {
+              dag.pullDynamic({node});
+              return dag.execute({node, runtime: 'dynamic'});
+            });
+        }
+
+        return dag.orderedVisit({visitor, failure, parallel});
+      });
+  }
+
+  execute ({node, runtime, force = false}) {
+    let dag = this;
+
+    return Promise.resolve()
+      .then(function () {
         let metadata = dag.metadata({node, setup: true});
         let promises = [];
-
 
         if (runtime !== 'static' && runtime !== 'dynamic') {
           throw new Error(`invalid runtime "${runtime}"`);
@@ -1224,13 +1143,12 @@ class DAG {
         for (let outport of dag.outports({node})) {
           let componentInfo = dag.componentInfo({node});
           let componentOutportInfo = dag.componentOutportInfo({node, outport});
-          let depends = new Set(componentOutportInfo.depends);
 
           let usage = dag.effectiveOutportUsage({node, outport});
 
           assert(usage === 'static' || usage === 'dynamic');
 
-          console.log( `runtime: ${runtime}, usage: ${usage}`);
+          console.log(`runtime: ${runtime}, usage: ${usage}`);
 
           if (force) {
             metadata.cached.outports[outport].staticChanged = undefined;
@@ -1238,22 +1156,22 @@ class DAG {
             metadata.cached.outports[outport].value = undefined;
           }
 
-          if (runtime === 'static' && !dag.needsReexecution({node,outport,runtime})) {
+          if (runtime === 'static' && !dag.needsReexecution({node, outport, runtime})) {
             // TODO: touch checked
             continue;
           }
 
           if (runtime === 'static' && usage === 'static') {
             // reset the outport, since it is gonna be replaced anyway
-            dag.staticSave({node,outport,value: undefined});
+            dag.staticSave({node, outport, value: undefined});
           }
 
           if (runtime === 'static' && usage === 'dynamic') {
             // if it needs static reexecution,
             // it means something changed statically,
             // and we should reset it.
-            if (dag.needsReexecution({node,outport,runtime})) {
-              dag.staticSave({node,outport,value:undefined});
+            if (dag.needsReexecution({node, outport, runtime})) {
+              dag.staticSave({node, outport, value: undefined});
             }
           }
 
@@ -1267,7 +1185,7 @@ class DAG {
 
           if (componentOutportInfo.pass) {
             let promise = Promise.resolve()
-                          .then(function(){
+                          .then(function () {
                             let {value} = dag.getCachedInport({node, inport: outport});
                             return Promise.resolve({outport, result: value});
                           });
@@ -1276,7 +1194,6 @@ class DAG {
           }
 
           let execute = componentInfo.execute[outport];
-
 
           if (execute === undefined) {
             throw new Error(`Component is malformed: there is no \`execute\` routine for the outport ${outport}`);
@@ -1288,15 +1205,13 @@ class DAG {
           //   continue;
           // }
 
-
-          let context = new NodeExecutionContext({node,outport,dag,runtime});
+          let context = new NodeExecutionContext({node, outport, dag, runtime});
 
           promises.push(Promise.resolve(execute({context})).then((result) => Promise.resolve({outport, result})));
-        
         }
 
         return Promise.all(promises)
-                .then(function(results){
+                .then(function (results) {
                   for (let {outport, result} of results) {
                     if (runtime === 'static') {
                       dag.staticSave({node, outport, value: result});
@@ -1307,7 +1222,6 @@ class DAG {
                   return Promise.resolve();
                 });
       }); // return Promise.resolve().then( function() { ..
-
   }
 }
 
@@ -1316,15 +1230,13 @@ let pipeline = {
     blur: {}
   },
 
-  DAG: function({regl,resl,getNofloGraph,pipeline}) { return new DAG({regl,resl,getNofloGraph,pipeline}); }
+  DAG: function ({regl, resl, getNofloGraph, pipeline}) { return new DAG({regl, resl, getNofloGraph, pipeline}); }
 };
-
 
 pipeline.components.texture = require('./components/texture.js')();
 pipeline.components['brute-gaussian'] = require('./components/brute-gaussian.js')();
 pipeline.components.framebuffer = require('./components/framebuffer.js')();
 pipeline.components.canvas = require('./components/canvas.js')();
-
 
 pipeline.components.window = {
   inports: [{name: 'inviewport'}, {name: 'inresolution'}, {name: 'in'}, {name: 'id'}],
@@ -1332,11 +1244,8 @@ pipeline.components.window = {
 };
 
 pipeline.components.none = {
-  inports: [ {'name': '>in', 'type': 'all'}],
+  inports: [{'name': '>in', 'type': 'all'}],
   outports: [{'name': 'out>', 'type': 'all'}]
 };
-
-
-
 
 module.exports = pipeline;
