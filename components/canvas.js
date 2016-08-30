@@ -1,22 +1,19 @@
 
-
-
-
 const clone = require('clone');
 const quad = require('glsl-quad');
 
 let canvas = {
   inports: [{name: 'inviewport'}, {name: 'inresolution'}, {name: 'in'},
-            
+
             {name: 'format', usage: 'static', initial: 'rgba'}],
-  outports: [ {name: 'out', depends: ['inviewport', 'inresolution', 'in', 'format']}],
+  outports: [{name: 'out', depends: ['inviewport', 'inresolution', 'in', 'format']}],
   compile: {},
   execute: {}
 };
 
 
 
-canvas.compile.out = function({context}) {
+canvas.compile.out = function ({context}) {
   let format = context.evaluate('format');
 
   const vert = `
@@ -66,11 +63,10 @@ canvas.compile.out = function({context}) {
   return command;
 };
 
-
-canvas.execute.out = function({context}) {
+canvas.execute.out = function ({context}) {
   let command = context.compiled();
 
-  let u_texture = context.require('in');
+  let texture = context.require('in');
   let inviewport = context.evaluate('inviewport');
   let inresolution = context.evaluate('inresolution');
 
@@ -80,16 +76,14 @@ canvas.execute.out = function({context}) {
   //   box: viewport
   // };
 
-  let u_in_lower = [inviewport.x/inresolution.width, inviewport.y/inresolution.height];
-  let u_in_upper = [(inviewport.x+inviewport.width)/inresolution.width, (inviewport.y+inviewport.height)/inresolution.height];
+  let inLower = [inviewport.x / inresolution.width, inviewport.y / inresolution.height];
+  let inUpper = [(inviewport.x + inviewport.width) / inresolution.width, (inviewport.y + inviewport.height) / inresolution.height];
 
-  command({viewport, u_texture, u_in_lower, u_in_upper});
+  command({viewport, u_texture: texture, u_in_lower: inLower, u_in_upper: inUpper});
 
-  return u_texture;
+  return texture;
 };
 
-
-
-module.exports = function(){
+module.exports = function () {
   return clone(canvas);
 };

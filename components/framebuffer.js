@@ -1,5 +1,4 @@
 
-
 const clone = require('clone');
 
 const framebuffer = {
@@ -11,7 +10,7 @@ const framebuffer = {
     {name: 'min', usage: 'static', initial: 'nearest'},
     {name: 'mag', usage: 'static', initial: 'nearest'},
     {name: 'wrap', usage: 'static', initial: 'clamp'}
-    ],
+  ],
   outports: [
     {name: 'out', depends: ['texture', 'type', 'format', 'inresolution', 'min', 'mag', 'wrap']},
     {name: 'outviewport', usage: 'static', depends: ['inresolution']},
@@ -21,41 +20,37 @@ const framebuffer = {
     {name: 'min', usage: 'static', pass: true},
     {name: 'mag', usage: 'static', pass: true},
     {name: 'wrap', usage: 'static', pass: true}
-    ],
+  ],
   compile: {},
   execute: {}
 };
 
-
-framebuffer.execute.outviewport = function({context}){
+framebuffer.execute.outviewport = function ({context}) {
   // TODO, the fbo in compiled.out() might have a mismatching width/height
   let inresolution = context.require('inresolution');
-  
+
   return {x: 0, y: 0, width: inresolution.width, height: inresolution.height};
 };
 
-framebuffer.execute.outresolution = function({context}){
+framebuffer.execute.outresolution = function ({context}) {
   // TODO, the fbo in compiled.out() might have a mismatching width/height
   let inresolution = context.require('inresolution');
-  
+
   return {width: inresolution.width, height: inresolution.height};
 };
 
-
-framebuffer.execute.out = function({context}){
+framebuffer.execute.out = function ({context}) {
   let {framebuffer} = context.compiled();
   return framebuffer;
 };
 
-
-framebuffer.compile.out = function({context}){
-  let texture = context.evaluate('texture');
+framebuffer.compile.out = function ({context}) {
   let inresolution = context.statically('inresolution');
 
   let params = {};
 
   for (let prop of ['wrap', 'min', 'mag']) {
-    if (context.connected(prop)){
+    if (context.connected(prop)) {
       params[prop] = context.evaluate(prop);
     }
   }
@@ -81,7 +76,6 @@ framebuffer.compile.out = function({context}){
   return {framebuffer: fbo};
 };
 
-
-module.exports = function(){
+module.exports = function () {
   return clone(framebuffer);
-}
+};

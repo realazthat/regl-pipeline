@@ -18,19 +18,19 @@ const texture = {
   execute: {}
 };
 
-texture.execute.outviewport = function({context}){
+texture.execute.outviewport = function ({context}) {
   let {width, height} = context.compiled('out');
 
   return {x: 0, y: 0, width, height};
 };
 
-texture.execute.outresolution = function({context}){
+texture.execute.outresolution = function ({context}) {
   let {width, height} = context.compiled('out');
   return {width, height};
 };
 
-texture.compile.out = function({context}){
-  return new Promise(function(resolve, reject){
+texture.compile.out = function ({context}) {
+  return new Promise(function (resolve, reject) {
     // let type = context.evaluate('type', 'uint8');
     // let components = context.evaluate('components', 'rgba');
     // let mag = context.evaluate('mag');
@@ -41,7 +41,7 @@ texture.compile.out = function({context}){
     let params = {};
 
     for (let prop of ['mag', 'min', 'format', 'type', 'flipY']) {
-      if (!context.connected(prop.toLowerCase())){
+      if (!context.connected(prop.toLowerCase())) {
         continue;
       }
 
@@ -86,13 +86,12 @@ texture.compile.out = function({context}){
   });
 };
 
-texture.execute.out = function({context}){
+texture.execute.out = function ({context}) {
   let {texture} = context.compiled();
 
   return texture;
 };
 
-
-module.exports = function() {
+module.exports = function () {
   return clone(texture);
 };

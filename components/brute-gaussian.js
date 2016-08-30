@@ -1,11 +1,12 @@
 
 const clone = require('clone');
 const quad = require('glsl-quad');
+const nunjucks = require('nunjucks');
 
 let gaussian = {
   inports: [{name: 'sigma'}, {name: 'radius'},
             {name: 'inviewport'}, {name: 'inresolution'}, {name: 'in'},
-            
+
             {name: 'format', usage: 'static', initial: 'rgba'},
             {name: 'outviewport'}, {name: 'outresolution'}, {name: 'framebuffer'} ],
   outports: [ {name: 'out', depends: ['sigma', 'radius', 'inviewport', 'inresolution', 'in', 'format', 'outviewport', 'outresolution', 'framebuffer']},
@@ -17,7 +18,7 @@ let gaussian = {
 };
 
 
-gaussian.compile.out = function({context}){
+gaussian.compile.out = function ({context}) {
   let sigma = context.evaluate('sigma');
   let radius = context.statically('radius');
   let inresolution = context.evaluate('inresolution');
@@ -26,7 +27,7 @@ gaussian.compile.out = function({context}){
   let outviewport = context.evaluate('outviewport');
   let format = context.statically('format');
   let framebuffer = context.evaluate('framebuffer', context.regl.prop('framebuffer'));
-  let glslType = format.length == 1 ? 'float' : `vec${format.length}`;
+  // let glslType = format.length == 1 ? 'float' : `vec${format.length}`;
 
 
   let constants = {decl: {}, expr: {}, js: {}};
@@ -57,16 +58,15 @@ gaussian.compile.out = function({context}){
     constants.decl.in_pixel_delta = 'uniform highp vec2 _in_pixel_delta;';
     constants.expr.in_pixel_delta = '_in_pixel_delta';
     constants.js.in_pixel_delta = undefined;
-    uniforms._in_pixel_delta = (context, props) => { return [1/props.inresolution.width, 1/props.inresolution.height]; };
-
+    uniforms._in_pixel_delta = (context, props) => { return [1 / props.inresolution.width, 1 / props.inresolution.height]; };
   } else {
     constants.decl.in_dims = `const highp ivec2 _in_dims = ivec2(${inresolution.width}, ${inresolution.height});`;
     constants.expr.in_dims = '_in_dims';
     constants.js.in_dims = {x: inresolution.width, y: inresolution.height};
 
-    constants.decl.in_pixel_delta = `const highp vec2 _in_pixel_delta = vec2(${1/inresolution.width}, ${1/inresolution.height});`;
+    constants.decl.in_pixel_delta = `const highp vec2 _in_pixel_delta = vec2(${1 / inresolution.width}, ${1 / inresolution.height});`;
     constants.expr.in_pixel_delta = '_in_pixel_delta';
-    constants.js.in_pixel_delta = {x: 1/inresolution.width, y: 1/inresolution.height};
+    constants.js.in_pixel_delta = {x: 1 / inresolution.width, y: 1 / inresolution.height};
   }
 
   if (outresolution === undefined) {
@@ -121,10 +121,6 @@ gaussian.compile.out = function({context}){
     constants.js.out_view.dims = undefined;
   }
 
-
-
-
-
   /*
   constants.decl.out_view = {};
   constants.expr.out_view = {};
@@ -151,7 +147,7 @@ gaussian.compile.out = function({context}){
     constants.expr.out_view.pixel_delta = `vec2(${outPixelDelta.x}, ${outPixelDelta.y})`;
     constants.js.out_view.pixel_delta = outPixelDelta;
   }
-  
+
   if (outLower === undefined) {
     constants.decl.out_view.ilower = 'uniform highp vec2 _out_view_ilower;';
     constants.expr.out_view.ilower = '_out_view_ilower';
@@ -165,7 +161,7 @@ gaussian.compile.out = function({context}){
 
   constants.expr.out_xform = '1.0';
   constants.expr.in_xform = '1.0';
-  
+
   constants.decl.out_view.uv = `highp vec2 _out_view_uv = ${constants.expr.out_xform}*a_uv;`;
   constants.expr.out_view.uv = '_out_view_uv';
   constants.decl.in_view.uv = `highp vec2 _in_view_uv = ${constants.expr.in_xform} * (${constants.expr.in_view.uv_lower} + _out_view_uv*(${constants.expr.in_view.uv_upper} - ${constants.expr.in_view.uv_lower}));`
@@ -179,11 +175,11 @@ gaussian.compile.out = function({context}){
   constants.js.in_channel = undefined;
   uniforms.in_channel = context.regl.prop('in_channel');
 
-  let kernelSide = radius*2+1;
-  let samples = kernelSide*kernelSide;
-  let uvCount = Math.ceil(samples/2)|0;
+  let kernelSide = radius * 2 + 1;
+  let samples = kernelSide * kernelSide;
+  let uvCount = Math.ceil(samples / 2) | 0;
 
-  let sigmaSqr = undefined;
+  let sigmaSqr;
   if (sigma === undefined) {
     constants.decl.sigma = 'uniform float sigma;';
     constants.decl.sigma_square = 'float sigma_square = sigma*sigma;';
@@ -193,9 +189,9 @@ gaussian.compile.out = function({context}){
     constants.js.sigma_square = undefined;
     uniforms.sigma = context.regl.prop('sigma');
   } else {
-    sigmaSqr = sigma*sigma;
+    sigmaSqr = sigma * sigma;
     constants.decl.sigma = `const float sigma = float(${sigma});`;
-    constants.decl.sigma_square = `const float sigma_square = float(${sigmaSqr});`
+    constants.decl.sigma_square = `const float sigma_square = float(${sigmaSqr});`;
     constants.expr.sigma = 'sigma';
     constants.expr.sigma_square = 'sigma_square';
     constants.js.sigma = sigma;
@@ -207,33 +203,28 @@ gaussian.compile.out = function({context}){
   constants.js.w = [];
 
   for (let i = 0; i < samples; ++i) {
-
-    let rx = ((i % kernelSide)|0) - radius;
-    let ry = ((i / kernelSide)|0) - radius;
+    let rx = ((i % kernelSide) | 0) - radius;
+    let ry = ((i / kernelSide) | 0) - radius;
 
     // console.log('rx:',rx);
     // console.log('ry:',ry);
 
     if (sigmaSqr !== undefined) {
       // weight for sample i
-      let wi = (1 / (2*constants.js.PI*sigmaSqr)) * Math.exp(-(rx*rx + ry*ry) / (2*sigmaSqr));
+      let wi = (1 / (2 * constants.js.PI * sigmaSqr)) * Math.exp(-(rx * rx + ry * ry) / (2 * sigmaSqr));
       constants.decl.w.push('');
       constants.expr.w.push(wi);
       constants.js.w.push(wi);
-
     } else {
-      constants.decl.w.push(`highp float w${i} = (1.0 / (2.0*${constants.js.PI}*${constants.expr.sigma_square})) * exp(-(float(${rx*rx}) + float(${ry*ry})) / (2.0*${constants.expr.sigma_square}));`);
+      constants.decl.w.push(`highp float w${i} = (1.0 / (2.0*${constants.js.PI}*${constants.expr.sigma_square})) * exp(-(float(${rx * rx}) + float(${ry * ry})) / (2.0*${constants.expr.sigma_square}));`);
       constants.expr.w.push(`w${i}`);
       constants.js.w.push(undefined);
     }
   }
 
-
-
-
   constants.js.precision = 'highp';
 
-  function makeVert(){
+  function makeVert () {
     return nunjucks.renderString(`
       precision {{constants.js.precision}} float;
 
@@ -283,7 +274,6 @@ gaussian.compile.out = function({context}){
 
       void main(){
 
-
         out_view_port_t out_view_port;
         out_view_port.xy = _out_view_xy;
         out_view_port.wh = _out_view_dims;
@@ -301,7 +291,7 @@ gaussian.compile.out = function({context}){
     `, {constants, kernelSide, samples, uvCount});
   }
 
-  function makeFrag(){
+  function makeFrag () {
     return nunjucks.renderString(`
       precision {{constants.js.precision}} float;
 
@@ -328,8 +318,6 @@ gaussian.compile.out = function({context}){
       }
     `, {constants, uvCount, samples, format});
   }
-
-
 
   let viewport = {};
 
@@ -363,12 +351,9 @@ gaussian.compile.out = function({context}){
     framebuffer,
     viewport
   });
-}
+};
 
-
-
-gaussian.execute.out = function({context}) {
-
+gaussian.execute.out = function ({context}) {
   let cmd = context.compiled();
   let params = {};
   params.in_channel = context.require('in');
@@ -383,17 +368,11 @@ gaussian.execute.out = function({context}) {
   params.sigma = context.require('sigma');
   params.radius = context.statically('radius');
 
-  cmd(params)
+  cmd(params);
 
   return context.require('framebuffer');
 };
 
-
-
-
-
-
-
-module.exports = function(){
+module.exports = function () {
   return clone(gaussian);
 };
