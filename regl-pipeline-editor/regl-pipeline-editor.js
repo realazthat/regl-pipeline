@@ -5,6 +5,8 @@ const resl = require('resl');
 const nunjucks = require('nunjucks');
 const assert = require('assert');
 const pipeline = require('../regl-pipeline.js');
+const GitHub = require('github-api');
+
 
 nunjucks.configure('views', {
     autoescape: true
@@ -356,6 +358,21 @@ window.addEventListener('polymer-ready', function() {
 
     window.localStorage.storedGraphs = JSON.stringify(storedGraphs);
   });
+
+
+  function loadGraph({graph}){
+    editor.graph = graph;
+
+    // clear the cache
+    setTimeout(function(){
+      for (let nofloNode of editor.nofloGraph.nodes) {
+        let node = nofloNode.id;
+
+        dag.clearCache({node});
+      }
+    })
+  }
+
   // load from storage button
   $("#load-graph-from-storage").on("click", function () {
     let storedGraphs = getStoredGraphs();
@@ -412,7 +429,7 @@ window.addEventListener('polymer-ready', function() {
       console.log(graphJSON);
 
       graph = graphJSON;
-      editor.graph = graphJSON;
+      loadGraph({graph});
 
       $('#stored-graph-modal').modal('hide');
     });
@@ -537,14 +554,74 @@ window.addEventListener('polymer-ready', function() {
   // Get graph button
   document.getElementById("get").addEventListener("click", function () {
     var graphJSON = JSON.stringify(editor.nofloGraph);
-    alert(graphJSON);
-    //you can use the var graphJSON to save the graph definition in a file/database
+    $('#graph-source-textarea').val(graphJSON);
+    $('#graph-source-modal').modal('show');
   });
+
   // Clear button
   document.getElementById("clear").addEventListener("click", function () {
     graph = {};
     editor.graph = graph;
   });
+
+
+  window.gh = new GitHub();
+  $(window).on('hashchange', function(e){
+    let hash = location.hash.slice(1);
+    if (hash.startsWith('gist/')){
+      let [_,gistid,path] = hash.split('/');
+
+
+
+      let gist = gh.getGist(gistid);
+
+      // clear graph
+      graph = {};
+      editor.graph = graph;
+
+      gist.read()
+        .then(function(data){
+          console.log(data);
+
+          let files = data.data.files;
+
+          if (path === undefined) {
+            if (Object.keys(files).length > 0) {
+              path = Object.keys(files)[0];
+            }
+          }
+
+          if (!files.hasOwnProperty(path)) {
+            throw new Error(`cannot find file at path "${path}" in gist "${gistid}"`);
+          }
+
+
+          if (true || files[path].truncated) {
+            return $.ajax({url: files[path].raw_url})
+              .then(function(graphJSON){
+                let graph = JSON.parse(graphJSON);
+                loadGraph({graph});
+              })
+          } else {
+            let graphJSON = files[path].content;
+            let graph = JSON.parse(graphJSON);
+            loadGraph({graph});
+          }
+        
+
+        }).catch(function(err){
+          console.error(err);
+          alert(`Unable to retrieve gist id=${gistid}, ${JSON.stringify(err)}`);
+        });
+
+    }
+  });
+
+  // trigger a hashchange event to initialize stuff to the initial hash
+  setTimeout(function(){
+    $(window).trigger('hashchange');
+  });
+
   // Resize to fill window and also have explicit w/h attributes
   var resize = function () {
     editor.setAttribute("width", window.innerWidth);

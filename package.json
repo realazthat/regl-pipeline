@@ -24,6 +24,7 @@
     "clone": "1.0.2",
     "cssy": "^2.2.0",
     "es6-error": "^3.0.1",
+    "github-api": "^2.3.0",
     "glsl-quad": "1.0.0",
     "jointjs": "0.9.10",
     "msgpack-lite": "^0.1.20",
