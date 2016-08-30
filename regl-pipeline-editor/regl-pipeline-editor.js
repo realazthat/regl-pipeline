@@ -4,6 +4,7 @@ const regl = require('regl')();
 const resl = require('resl');
 const nunjucks = require('nunjucks');
 const assert = require('assert');
+const clone = require('clone');
 const pipeline = require('../regl-pipeline.js');
 const GitHub = require('github-api');
 
@@ -24,8 +25,6 @@ window.addEventListener('polymer-ready', function() {
     ;
 
 
-  // Remove loading message
-  document.body.removeChild( document.getElementById("loading") );
 
 
   // The graph editor
@@ -97,10 +96,13 @@ window.addEventListener('polymer-ready', function() {
     addnode(component);
   });
 
+
+
+  window.gh = new GitHub();
   editor.$.graph.library = library;
   // Load empty graph
-  let graph = {};
-  editor.graph = graph;
+  window.graph = {};
+  editor.graph = window.graph;
 
 
 
@@ -347,9 +349,10 @@ window.addEventListener('polymer-ready', function() {
     }
   }
 
+
   // save to storage button
   $("#save-graph-to-storage").on("click", function () {
-    var graphJSON = JSON.stringify(editor.nofloGraph);
+    var graphJSON = serializeGraph()
     
 
     let storedGraphs = getStoredGraphs();
@@ -360,17 +363,54 @@ window.addEventListener('polymer-ready', function() {
   });
 
 
+  function timeoutPromise(timeout) {
+    return new Promise(function(resolve,reject){
+      setTimeout(function(){
+        return resolve();
+      }, timeout);
+    });
+  }
+
   function loadGraph({graph}){
-    editor.graph = graph;
+    return Promise.resolve()
+      .then(function(){
+        window.graph = clone(graph);
+        editor.graph = window.graph;
+        
 
-    // clear the cache
-    setTimeout(function(){
-      for (let nofloNode of editor.nofloGraph.nodes) {
-        let node = nofloNode.id;
+        return timeoutPromise()
+          .then(function(){
+            // editor.graphChanged();
+            return timeoutPromise();
+          }).then(function(){
+            for (let nofloNode of editor.nofloGraph.nodes) {
+              let node = nofloNode.id;
 
-        dag.clearCache({node});
-      }
-    })
+              dag.clearCache({node});
+            }
+            return Promise.resolve();
+          });
+        
+      });
+  }
+
+  function serializeGraph() {
+    let graph = clone(editor.nofloGraph.toJSON());
+
+    console.log('serializeGraph, graph:',graph);
+
+    // for (let nofloNode of graph.nodes) {
+    //   let metadata = nofloNode.metadata;
+    //   if (metadata === undefined)
+    //     continue;
+
+    //   if (metadata.cached === undefined)
+    //     continue;
+
+    //   delete metadata.cached;
+    // }
+
+    return JSON.stringify(graph);
   }
 
   // load from storage button
@@ -428,12 +468,69 @@ window.addEventListener('polymer-ready', function() {
 
       console.log(graphJSON);
 
-      graph = graphJSON;
-      loadGraph({graph});
+      loadGraph({graph: graphJSON})
+        .then(function(){
+          $('#stored-graph-modal').modal('hide');
+          return Promise.resolve();
+        })
+        .catch(function(err){
+          $('#stored-graph-modal-alert').text('Error parsing graph').show();
+        });
 
-      $('#stored-graph-modal').modal('hide');
     });
   });
+
+
+  // load from storage button
+  $("#load-graph-from-gist").on("click", function () {
+
+    $('#load-graph-from-gist-modal').modal('show');
+
+    $('#load-graph-from-gist-form').on('submit', function(){
+      let gistid = $('#load-graph-from-gist-gistid').val();
+      let file = $('#load-graph-from-gist-file').val();
+      let parts = ['#gist', gistid];
+
+      if (file.length > 0 ) {
+        parts.push(file);
+      }
+
+      let hash = parts.join('/');
+
+
+      window.location.hash = hash;
+      $('#load-graph-from-gist-modal').modal('hide');
+    });
+  });
+
+  // load from storage button
+  $("#save-graph-to-gist").on("click", function () {
+
+    let graphJSON = serializeGraph();
+    console.log(graphJSON);
+
+    let gist = window.gh.getGist();
+    gist.create({
+       public: true,
+       description: 'regl-pipeline graph',
+       files: {
+          "graph.json": {
+             content: graphJSON
+          }
+       }
+    }).then(function({data}) {
+      let parts = ['#gist', data.id, 'graph.json'];
+
+      window.location.hash = parts.join('/');
+
+      return Promise.resolve();
+    }).catch(function(err){
+      console.error(err);
+    });
+
+  
+  });
+
 
   $('#compile-node').on('click', function(){
 
@@ -558,28 +655,46 @@ window.addEventListener('polymer-ready', function() {
     $('#graph-source-modal').modal('show');
   });
 
+  function clearGraph(){
+    return Promise.resolve()
+      .then(function(){
+        window.graph = {};
+        editor.graph = window.graph;
+        return Promise.resolve();
+      })
+  }
+
   // Clear button
   document.getElementById("clear").addEventListener("click", function () {
-    graph = {};
-    editor.graph = graph;
+    clearGraph()
+      .catch(function(err){
+        console.error(err);
+      });
   });
 
 
-  window.gh = new GitHub();
   $(window).on('hashchange', function(e){
-    let hash = location.hash.slice(1);
+    console.log('hashchange');
+
+    let hash = window.location.hash.slice(1);
     if (hash.startsWith('gist/')){
       let [_,gistid,path] = hash.split('/');
 
 
 
+      $("#loading").show();
+
       let gist = gh.getGist(gistid);
 
       // clear graph
-      graph = {};
-      editor.graph = graph;
-
-      gist.read()
+      // clearGraph()
+      Promise.resolve()
+        // .then(function(){
+        //   return clearGraph();
+        // })
+        .then(function(){
+          return gist.read()
+        })
         .then(function(data){
           console.log(data);
 
@@ -596,20 +711,22 @@ window.addEventListener('polymer-ready', function() {
           }
 
 
-          if (true || files[path].truncated) {
+          if (files[path].truncated) {
             return $.ajax({url: files[path].raw_url})
               .then(function(graphJSON){
                 let graph = JSON.parse(graphJSON);
-                loadGraph({graph});
+                return loadGraph({graph});
               })
           } else {
             let graphJSON = files[path].content;
             let graph = JSON.parse(graphJSON);
-            loadGraph({graph});
+            return loadGraph({graph});
           }
-        
-
+        }).then(function(){
+          $("#loading").hide();
+          return Promise.resolve();
         }).catch(function(err){
+          $("#loading").hide();
           console.error(err);
           alert(`Unable to retrieve gist id=${gistid}, ${JSON.stringify(err)}`);
         });
@@ -618,8 +735,19 @@ window.addEventListener('polymer-ready', function() {
   });
 
   // trigger a hashchange event to initialize stuff to the initial hash
-  setTimeout(function(){
-    $(window).trigger('hashchange');
+
+  let firstTime = true;
+
+  $(editor).on('graphInitialised', function(){
+    console.log('graphInitialised');
+
+    if (firstTime) {
+      firstTime = false;
+      setTimeout(function(){
+        $('#loading').hide();
+        $(window).trigger('hashchange');
+      }, 600);
+    }
   });
 
   // Resize to fill window and also have explicit w/h attributes

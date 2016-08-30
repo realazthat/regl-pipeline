@@ -8,8 +8,8 @@ const quad = require('glsl-quad');
 let canvas = {
   inports: [{name: 'inviewport'}, {name: 'inresolution'}, {name: 'in'},
             
-            {name: 'components', usage: 'static', initial: 'rgba'}],
-  outports: [ {name: 'out', depends: ['inviewport', 'inresolution', 'in', 'components']}],
+            {name: 'format', usage: 'static', initial: 'rgba'}],
+  outports: [ {name: 'out', depends: ['inviewport', 'inresolution', 'in', 'format']}],
   compile: {},
   execute: {}
 };
@@ -17,7 +17,7 @@ let canvas = {
 
 
 canvas.compile.out = function({context}) {
-  let components = context.evaluate('components');
+  let format = context.evaluate('format');
 
   const vert = `
     precision highp float;
@@ -43,7 +43,7 @@ canvas.compile.out = function({context}) {
       
       gl_FragColor = vec4(0,0,0,1);
 
-      gl_FragColor.${components} = texture2D(u_texture, in_uv).${components};
+      gl_FragColor.${format} = texture2D(u_texture, in_uv).${format};
     }
   `;
   let command = context.regl({

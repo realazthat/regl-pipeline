@@ -5,19 +5,18 @@ const clone = require('clone');
 const framebuffer = {
   inports: [
     {name: 'texture', usage: 'static'},
-    {name: 'components', usage: 'static', initial: 'rgba'},
+    {name: 'format', usage: 'static', initial: 'rgba'},
     {name: 'type', usage: 'static', initial: 'uint8'},
-    {name: 'width', usage: 'static'},
-    {name: 'height', usage: 'static'},
+    {name: 'inresolution', usage: 'static'},
     {name: 'min', usage: 'static', initial: 'nearest'},
     {name: 'mag', usage: 'static', initial: 'nearest'},
     {name: 'wrap', usage: 'static', initial: 'clamp'}
     ],
   outports: [
-    {name: 'out', depends: ['texture', 'type', 'components', 'width', 'height', 'min', 'mag', 'wrap']},
-    {name: 'outviewport', usage: 'static', depends: ['width', 'height']},
-    {name: 'outresolution', usage: 'static', depends: ['width', 'height']},
-    {name: 'components', usage: 'static', pass: true},
+    {name: 'out', depends: ['texture', 'type', 'format', 'inresolution', 'min', 'mag', 'wrap']},
+    {name: 'outviewport', usage: 'static', depends: ['inresolution']},
+    {name: 'outresolution', usage: 'static', depends: ['inresolution']},
+    {name: 'format', usage: 'static', pass: true},
     {name: 'type', usage: 'static', pass: true},
     {name: 'min', usage: 'static', pass: true},
     {name: 'mag', usage: 'static', pass: true},
@@ -29,17 +28,17 @@ const framebuffer = {
 
 
 framebuffer.execute.outviewport = function({context}){
-  let width = context.evaluate('width');
-  let height = context.evaluate('height');
+  // TODO, the fbo in compiled.out() might have a mismatching width/height
+  let inresolution = context.require('inresolution');
   
-  return {x: 0, y: 0, width, height};
+  return {x: 0, y: 0, width: inresolution.width, height: inresolution.height};
 };
 
 framebuffer.execute.outresolution = function({context}){
-  let width = context.evaluate('width');
-  let height = context.evaluate('height');
+  // TODO, the fbo in compiled.out() might have a mismatching width/height
+  let inresolution = context.require('inresolution');
   
-  return {width, height};
+  return {width: inresolution.width, height: inresolution.height};
 };
 
 
@@ -51,47 +50,35 @@ framebuffer.execute.out = function({context}){
 
 framebuffer.compile.out = function({context}){
   let texture = context.evaluate('texture');
-  let width = context.evaluate('width');
-  let height = context.evaluate('height');
-  let wrap = context.evaluate('wrap');
-  let mag = context.evaluate('mag');
-  let min = context.evaluate('min');
-  let type = context.evaluate('type');
-  let components = context.evaluate('components');
+  let inresolution = context.statically('inresolution');
 
+  let params = {};
 
-  let result = {};
-
-  if (texture !== null) {
-    // TODO: check that texture matches the options
-
-    result.framebuffer = context.regl.framebuffer({
-      color: texture,
-      colorFormat: components,
-      colorType: type,
-      width,
-      height,
-      depth: false,
-      stencil: false,
-      wrap,
-      mag,
-      min
-    });
-  } else {
-    result.framebuffer = context.regl.framebuffer({
-      colorFormat: components,
-      colorType: type,
-      width,
-      height,
-      depth: false,
-      stencil: false,
-      wrap,
-      mag,
-      min
-    });
+  for (let prop of ['wrap', 'min', 'mag']) {
+    if (context.connected(prop)){
+      params[prop] = context.evaluate(prop);
+    }
   }
 
-  return result;
+  let type = context.evaluate('type');
+  let format = context.evaluate('format');
+
+  let {width, height} = inresolution;
+
+  params.width = width;
+  params.height = height;
+  params.colorFormat = format;
+  params.colorType = type;
+  params.depth = false;
+  params.stencil = false;
+
+  if (context.connected('texture')) {
+    params.color = context.evaluate('texture');
+  }
+
+  let fbo = context.regl.framebuffer(params);
+
+  return {framebuffer: fbo};
 };
 
 

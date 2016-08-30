@@ -6,12 +6,12 @@ let gaussian = {
   inports: [{name: 'sigma'}, {name: 'radius'},
             {name: 'inviewport'}, {name: 'inresolution'}, {name: 'in'},
             
-            {name: 'components', usage: 'static', initial: 'rgba'},
+            {name: 'format', usage: 'static', initial: 'rgba'},
             {name: 'outviewport'}, {name: 'outresolution'}, {name: 'framebuffer'} ],
-  outports: [ {name: 'out', depends: ['sigma', 'radius', 'inviewport', 'inresolution', 'in', 'components', 'outviewport', 'outresolution', 'framebuffer']},
+  outports: [ {name: 'out', depends: ['sigma', 'radius', 'inviewport', 'inresolution', 'in', 'format', 'outviewport', 'outresolution', 'framebuffer']},
               {name: 'outviewport', pass: true},
               {name: 'outresolution', pass: true},
-              {name: 'components', usage: 'static', pass: true}],
+              {name: 'format', usage: 'static', pass: true}],
   compile: {},
   execute: {}
 };
@@ -19,14 +19,14 @@ let gaussian = {
 
 gaussian.compile.out = function({context}){
   let sigma = context.evaluate('sigma');
-  let radius = context.evaluate('radius');
+  let radius = context.statically('radius');
   let inresolution = context.evaluate('inresolution');
   let inviewport = context.evaluate('inviewport');
   let outresolution = context.evaluate('outresolution');
   let outviewport = context.evaluate('outviewport');
-  let components = context.evaluate('components');
+  let format = context.statically('format');
   let framebuffer = context.evaluate('framebuffer', context.regl.prop('framebuffer'));
-  let glslType = components.length == 1 ? 'float' : `vec${components.length}`;
+  let glslType = format.length == 1 ? 'float' : `vec${format.length}`;
 
 
   let constants = {decl: {}, expr: {}, js: {}};
@@ -319,14 +319,14 @@ gaussian.compile.out = function({context}){
           {% set uvcomp = 'xy' if i % 2 == 0 else 'zw' %}
           {{constants.decl.w[i]}}
           wsum += float({{constants.expr.w[i]}});
-          gl_FragColor.{{components}} += texture2D({{constants.expr.in_channel}}, v_nuvs[{{i//2}}].{{uvcomp}}).{{components}} * float({{constants.expr.w[i]}});
+          gl_FragColor.{{format}} += texture2D({{constants.expr.in_channel}}, v_nuvs[{{i//2}}].{{uvcomp}}).{{format}} * float({{constants.expr.w[i]}});
         {% endfor %}
 
-        gl_FragColor.{{components}} /= wsum;
+        gl_FragColor.{{format}} /= wsum;
 
         gl_FragColor.a = 1.0;
       }
-    `, {constants, uvCount, samples, components});
+    `, {constants, uvCount, samples, format});
   }
 
 
@@ -373,15 +373,15 @@ gaussian.execute.out = function({context}) {
   let params = {};
   params.in_channel = context.require('in');
   params.framebuffer = context.require('framebuffer');
-  
+
   params.inresolution = context.evaluate('inresolution');
   params.inviewport = context.evaluate('inviewport');
   params.outviewport = context.evaluate('outviewport');
   params.outresolution = context.evaluate('outresolution');
-  params.components = context.evaluate('components');
+  params.format = context.statically('format');
 
-  params.sigma = context.evaluate('sigma');
-  params.radius = context.evaluate('radius');
+  params.sigma = context.require('sigma');
+  params.radius = context.statically('radius');
 
   cmd(params)
 

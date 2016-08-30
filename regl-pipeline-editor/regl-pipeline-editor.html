@@ -161,6 +161,7 @@
             </button>
             <ul class="dropdown-menu" id="save-graph-menu" aria-labelledby="save-graph">
               <li><a id="save-graph-to-storage" class="btn">to storage</a></li>
+              <li><a id="save-graph-to-gist" class="btn">to gist</a></li>
               <li><a id="save-graph-to-clipboard" class="btn disabled">to file</a></li>
               <li><a id="save-graph-to-string" class="btn disabled">to string</a></li>
               <li><a id="save-graph-to-clipboard" class="btn disabled">to clipboard</a></li>
@@ -177,6 +178,7 @@
             </button>
             <ul class="dropdown-menu" id="load-graph-menu" aria-labelledby="load-graph">
               <li><a id="load-graph-from-storage" class="btn">from storage</a></li>
+              <li><a id="load-graph-from-gist" class="btn">from gist</a></li>
               <li><a class="btn disabled">from file</a></li>
               <li><a class="btn disabled">from string</a></li>
               <li><a class="btn disabled">from clipboard</a></li>
@@ -208,6 +210,38 @@
               <button type="button" class="btn btn-default" data-dismiss="modal">Close</button>
               <button type="button" class="btn btn-primary" id="stored-graph-modal-submit">Load Graph</button>
             </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Modal for loading graph from gist -->
+      <div id="load-graph-from-gist-modal" class="modal fade" tabindex="-1" role="dialog">
+        <div class="modal-dialog" role="document">
+          <div class="modal-content">
+            <div class="modal-header">
+              <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+              <h4 class="modal-title">Load graph from gist</h4>
+            </div>
+            <form id="load-graph-from-gist-form" class="form-horizontal">
+              <div class="modal-body">
+                <div class="form-group">
+                  <label class="col-sm-2 control-label">Email</label>
+                  <div class="col-sm-10">
+                    <input type="text" class="form-control" id="load-graph-from-gist-gistid" placeholder="gistid">
+                  </div>
+                </div>
+                <div class="form-group">
+                  <label class="col-sm-2 control-label">File</label>
+                  <div class="col-sm-10">
+                    <input type="text" class="form-control" id="load-graph-from-gist-file" placeholder="file">
+                  </div>
+                </div>
+              </div>
+              <div class="modal-footer">
+                <button type="button" class="btn btn-default" data-dismiss="modal">Close</button>
+                <button type="submit" class="btn btn-primary">Load Graph</button>
+              </div>
+            </form>
           </div>
         </div>
       </div>
