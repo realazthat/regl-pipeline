@@ -472,7 +472,7 @@ $(document).ready(function(){
             return Promise.resolve(window.dag.compile({node, force: true}));
           })
           .then(function () {
-            return Promise.resolve(window.dag.execute({node, runtime: 'static', force: true}));
+            return Promise.resolve(window.dag.executeSync({node, runtime: 'static', force: true}));
           })
           .catch(function (err) {
             console.error(err);
@@ -492,10 +492,11 @@ $(document).ready(function(){
         editor.updateErrorNodes();
         Promise.resolve()
           .then(function () {
-            return window.dag.pullDynamic({node});
+            window.dag.pullDynamic({node});
+            return Promise.resolve();
           })
           .then(function () {
-            return window.dag.execute({node, runtime: 'dynamic'});
+            return Promise.resolve(window.dag.executeSync({node, runtime: 'dynamic'}));
           })
           .catch(function (err) {
             console.error(err);
@@ -522,7 +523,8 @@ $(document).ready(function(){
           return window.dag.compileFrame({force: false, failure, parallel: false});
         })
         .then(function (results) {
-          return window.dag.executeFrame({failure, parallel: false});
+          window.dag.executeFrameSync({failure, parallel: false});
+          return Promise.resolve()
         })
         .then(function () {
 

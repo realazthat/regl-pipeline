@@ -68,7 +68,12 @@ function computeRoots ({V, E}) {
   return S;
 }
 
-// returns a level-order, a list of levels of nodes, in a topological sort.
+/**
+ * A level order, where a level is defined as a set of nodes with the
+ * same longest distance from any root. Useful for computing
+ * topological orderings.
+ *
+ */
 function computeLevelOrder ({V, E}) {
   // set of nodes with no incoming edges
   let roots = computeRoots({V, E});
@@ -261,6 +266,10 @@ class DAG {
     }
 
     return componentInfo;
+  }
+
+  nodes () {
+    return this.getNofloGraph().nodes.map((nofloNode) => nofloNode.id);
   }
 
   inports ({node = null, component = null}) {
@@ -755,7 +764,9 @@ class DAG {
         let {outnode, outport} = this.getInportConnection({node, inport});
         let newValueChanged;
         let newValue;
-        ({value: newValue, usage, valueChanged: newValueChanged} = this.getCachedOutport({node: outnode, outport}));
+        let newUsage;
+        ({value: newValue, usage: newUsage, valueChanged: newValueChanged} = this.getCachedOutport({node: outnode, outport}));
+        assert(usage === newUsage);
 
         value = newValue;
         valueChanged = Math.max(valueChanged, newValueChanged);
@@ -953,11 +964,11 @@ class DAG {
             promise = promise.then(function () {
               return Promise.resolve(compile({context}));
             })
-                      .then(function (compiled) {
-                        console.log('saving compiled: ', compiled);
-                        dag.saveCompiled({node, outport, compiled});
-                        return Promise.resolve();
-                      });
+            .then(function (compiled) {
+              console.log('saving compiled: ', compiled);
+              dag.saveCompiled({node, outport, compiled});
+              return Promise.resolve();
+            });
           }
           promises.push(promise);
         }
@@ -978,6 +989,12 @@ class DAG {
     return counter;
   }
 
+  /**
+   * A level order, where a level is defined as a set of nodes with the
+   * same longest distance from any root. Useful for computing
+   * topological orderings.
+   *
+   */
   levelOrdering () {
     let V = this.getNofloGraph().nodes.map((nofloNode) => nofloNode.id);
     let E = this.getNofloGraph().edges.map((nofloEdge) => [nofloEdge.from.node, nofloEdge.to.node]);
@@ -988,6 +1005,10 @@ class DAG {
     return levelOrder;
   }
 
+  /**
+   * Returns a valid topological ordering of nodes.
+   *
+   */
   ordering () {
     let levelOrder = this.levelOrdering();
 
@@ -999,6 +1020,35 @@ class DAG {
     }
 
     return order;
+  }
+
+  visitLevelSync ({level, visitor, failure = null}) {
+    for (let node of level) {
+      try {
+        visitor(node);
+      } catch (err) {
+        console.error(err);
+        if (failure) {
+          failure(err, node);
+        }
+        throw err;
+      }
+    }
+  }
+
+  /**
+   * Visits the graph in a valid order. Assumes a synchronus/blocking
+   * `visitor()` callback. `visitor` is called with `node` (id) as the
+   * single positional argument.
+   */
+  orderedVisitSync ({visitor, failure = null}) {
+    let dag = this;
+
+    let levelOrder = dag.levelOrdering();
+
+    for (let level of levelOrder) {
+      dag.visitLevelSync({level, visitor, failure})
+    }
   }
 
   visitLevel ({level, visitor, parallel, failure = null}) {
@@ -1079,10 +1129,10 @@ class DAG {
       //   this forces each level to complete before running the next one.
       //   an actual for-loop would start all the nodes compiling/executing at once.
     return levelOrder.reduce(function (promise, level) {
-      return promise.then(function () {
-        return dag.visitLevel({level, visitor, failure, parallel});
-      });
-    },
+        return promise.then(function () {
+          return dag.visitLevel({level, visitor, failure, parallel});
+        });
+      },
       Promise.resolve()
     );
   }
@@ -1101,7 +1151,8 @@ class DAG {
               return dag.compile({node, force});
             })
             .then(function () {
-              return dag.execute({node, runtime: 'static', force});
+              let result = dag.executeSync({node, runtime: 'static', force});
+              return Promise.resolve(result);
             });
         }
 
@@ -1109,119 +1160,100 @@ class DAG {
       });
   }
 
-  executeFrame ({failure, parallel = true}) {
+  executeFrameSync ({failure, parallel = true}) {
     let dag = this;
 
-    return Promise.resolve()
-      .then(function () {
-        dag.incFrame();
-
-        function visitor (node) {
-          return Promise.resolve()
-            .then(function () {
-              dag.pullDynamic({node});
-              return dag.execute({node, runtime: 'dynamic'});
-            });
-        }
-
-        return dag.orderedVisit({visitor, failure, parallel});
-      });
+    function visitor (node) {
+      dag.pullDynamic({node});
+      dag.executeSync({node, runtime: 'dynamic'});
+    }
+    dag.orderedVisitSync({visitor, failure});
   }
 
-  execute ({node, runtime, force = false}) {
+  executeSync ({node, runtime, force = false}) {
     let dag = this;
 
-    return Promise.resolve()
-      .then(function () {
-        let metadata = dag.metadata({node, setup: true});
-        let promises = [];
+    let metadata = dag.metadata({node, setup: true});
+    let results = [];
 
-        if (runtime !== 'static' && runtime !== 'dynamic') {
-          throw new Error(`invalid runtime "${runtime}"`);
+    if (runtime !== 'static' && runtime !== 'dynamic') {
+      throw new Error(`invalid runtime "${runtime}"`);
+    }
+
+    for (let outport of dag.outports({node})) {
+      let componentInfo = dag.componentInfo({node});
+      let componentOutportInfo = dag.componentOutportInfo({node, outport});
+
+      let usage = dag.effectiveOutportUsage({node, outport});
+
+      assert(usage === 'static' || usage === 'dynamic');
+
+      console.log(`runtime: ${runtime}, usage: ${usage}`);
+
+      if (force) {
+        metadata.cached.outports[outport].staticChanged = undefined;
+        metadata.cached.outports[outport].valueChanged = undefined;
+        metadata.cached.outports[outport].value = undefined;
+      }
+
+      if (runtime === 'static' && !dag.needsReexecution({node, outport, runtime})) {
+        // TODO: touch checked
+        continue;
+      }
+
+      if (runtime === 'static' && usage === 'static') {
+        // reset the outport, since it is gonna be replaced anyway
+        dag.staticSave({node, outport, value: undefined});
+      }
+
+      if (runtime === 'static' && usage === 'dynamic') {
+        // if it needs static reexecution,
+        // it means something changed statically,
+        // and we should reset it.
+        if (dag.needsReexecution({node, outport, runtime})) {
+          dag.staticSave({node, outport, value: undefined});
         }
+      }
 
-        for (let outport of dag.outports({node})) {
-          let componentInfo = dag.componentInfo({node});
-          let componentOutportInfo = dag.componentOutportInfo({node, outport});
+      if (runtime !== usage) {
+        continue;
+      }
 
-          let usage = dag.effectiveOutportUsage({node, outport});
+      if (componentInfo.execute === undefined) {
+        throw new Error('Component is malformed: there is no `execute` dictionary');
+      }
 
-          assert(usage === 'static' || usage === 'dynamic');
+      if (componentOutportInfo.pass) {
+        let {value} = dag.getCachedInport({node, inport: outport});
+                      
+        results.push({outport, value: value});
+        continue;
+      }
 
-          console.log(`runtime: ${runtime}, usage: ${usage}`);
+      let execute = componentInfo.execute[outport];
 
-          if (force) {
-            metadata.cached.outports[outport].staticChanged = undefined;
-            metadata.cached.outports[outport].valueChanged = undefined;
-            metadata.cached.outports[outport].value = undefined;
-          }
+      if (execute === undefined) {
+        throw new Error(`Component is malformed: there is no \`execute\` routine for the outport ${outport}`);
+      }
 
-          if (runtime === 'static' && !dag.needsReexecution({node, outport, runtime})) {
-            // TODO: touch checked
-            continue;
-          }
+      let context = new NodeExecutionContext({node, outport, dag, runtime});
 
-          if (runtime === 'static' && usage === 'static') {
-            // reset the outport, since it is gonna be replaced anyway
-            dag.staticSave({node, outport, value: undefined});
-          }
+      let result = {};
+      result.value = execute({context});
+      result.outport = outport;
+      results.push(result);
 
-          if (runtime === 'static' && usage === 'dynamic') {
-            // if it needs static reexecution,
-            // it means something changed statically,
-            // and we should reset it.
-            if (dag.needsReexecution({node, outport, runtime})) {
-              dag.staticSave({node, outport, value: undefined});
-            }
-          }
+    }
 
-          if (runtime !== usage) {
-            continue;
-          }
+    for (let {outport, value} of results) {
+      if (runtime === 'static') {
+        dag.staticSave({node, outport, value});
+      } else {
+        dag.dynamicSave({node, outport, value});
+      }
+    }
 
-          if (componentInfo.execute === undefined) {
-            throw new Error('Component is malformed: there is no `execute` dictionary');
-          }
-
-          if (componentOutportInfo.pass) {
-            let promise = Promise.resolve()
-                          .then(function () {
-                            let {value} = dag.getCachedInport({node, inport: outport});
-                            return Promise.resolve({outport, result: value});
-                          });
-            promises.push(promise);
-            continue;
-          }
-
-          let execute = componentInfo.execute[outport];
-
-          if (execute === undefined) {
-            throw new Error(`Component is malformed: there is no \`execute\` routine for the outport ${outport}`);
-          }
-
-          // metadata.cached.outports[outport].checked = frame;
-
-          // if (!dag.needsRecompilation({node, outport})) {
-          //   continue;
-          // }
-
-          let context = new NodeExecutionContext({node, outport, dag, runtime});
-
-          promises.push(Promise.resolve(execute({context})).then((result) => Promise.resolve({outport, result})));
-        }
-
-        return Promise.all(promises)
-                .then(function (results) {
-                  for (let {outport, result} of results) {
-                    if (runtime === 'static') {
-                      dag.staticSave({node, outport, value: result});
-                    } else {
-                      dag.dynamicSave({node, outport, value: result});
-                    }
-                  }
-                  return Promise.resolve();
-                });
-      }); // return Promise.resolve().then( function() { ..
+    return results;
   }
 }
 
