@@ -70,10 +70,14 @@ canvas.execute.out = function ({context}) {
   let command = context.compiled();
 
   let texture = context.require('in');
-  let inviewport = context.evaluate('inviewport');
-  let inresolution = context.evaluate('inresolution');
+  let inviewport = context.require('inviewport');
+  let inresolution = context.require('inresolution');
 
-  let viewport = {x: 0, y: 0, width: 256, height: 256};
+  let viewport = {x: 0,
+                  y: 0,
+                  width: inresolution.width,
+                  height: inresolution.height};
+  
   // let scissor = {
   //   enable: true,
   //   box: viewport
