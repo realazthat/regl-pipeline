@@ -15,8 +15,8 @@ See `regl-pipeline-demo.js` for usage.
 
 branch | demo
 -------|-------
-master | [glsl-sat-demo](https://realazthat.github.io/regl-pipeline/master/www/regl-pipeline-editor/regl-pipeline-editor.html)
-develop | [glsl-sat-demo](https://realazthat.github.io/regl-pipeline/develop/www/regl-pipeline-editor/regl-pipeline-editor.html)
+master | [regl-pipeline-editor-demo](https://realazthat.github.io/regl-pipeline/master/www/regl-pipeline-editor/regl-pipeline-editor.html)
+develop | [regl-pipeline-editor-demo](https://realazthat.github.io/regl-pipeline/develop/www/regl-pipeline-editor/regl-pipeline-editor.html)
 
 ####Run the demo
 
