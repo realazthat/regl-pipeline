@@ -77,7 +77,7 @@ canvas.execute.out = function ({context}) {
                   y: 0,
                   width: inresolution.width,
                   height: inresolution.height};
-  
+
   // let scissor = {
   //   enable: true,
   //   box: viewport

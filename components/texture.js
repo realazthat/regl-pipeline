@@ -2,8 +2,8 @@
 const clone = require('clone');
 
 const texture = {
-  name: "RESL/REGL Texture",
-  description: "Source texture loaded from resl",
+  name: 'RESL/REGL Texture',
+  description: 'Source texture loaded from resl',
   inports: [{name: 'src', usage: 'static'}, {name: 'format', usage: 'static', initial: 'rgba'}, {name: 'type', usage: 'static', initial: 'uint8'},
             {name: 'width', usage: 'static'}, {name: 'height', usage: 'static'},
             {name: 'min', usage: 'static', initial: 'nearest'}, {name: 'mag', usage: 'static', initial: 'nearest'},

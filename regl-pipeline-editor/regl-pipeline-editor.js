@@ -1,5 +1,4 @@
 
-
 const nunjucks = require('nunjucks');
 const assert = require('assert');
 const clone = require('clone');
@@ -23,8 +22,7 @@ window.jQuery = $;
 
 // React.unmountComponentAtNode = ReactDOM.unmountComponentAtNode;
 
-
-$(window).on('WebComponentsReady', function(){
+$(window).on('WebComponentsReady', function () {
   console.log('Components are ready');
 });
 
@@ -34,7 +32,7 @@ nunjucks.configure('views', {
 
 window.noflo = noflo;
 
-$(document).ready(function(){
+$(document).ready(function () {
   const regl = require('regl')();
   const resl = require('resl');
 
@@ -65,7 +63,6 @@ $(document).ready(function(){
         ]
       }
     };
-
 
     for (let component of Object.keys(pipeline.components)) {
       let componentInfo = pipeline.components[component];
@@ -302,21 +299,14 @@ $(document).ready(function(){
       window.localStorage.storedGraphs = JSON.stringify(storedGraphs);
     });
 
-    function timeoutPromise (timeout) {
-      return new Promise(function (resolve, reject) {
-        setTimeout(function () {
-          return resolve();
-        }, timeout);
-      });
-    }
-
     function loadGraph ({graph}) {
       return Promise.resolve()
         .then(function () {
           window.graph = clone(graph);
           editor.graph = window.graph;
 
-          $(editor).one('graphInitialised', function(){
+          // TODO: should we resolve only after clearing the cache?
+          $(editor).one('graphInitialised', function () {
             for (let nofloNode of editor.nofloGraph.nodes) {
               let node = nofloNode.id;
 
@@ -524,7 +514,7 @@ $(document).ready(function(){
         })
         .then(function (results) {
           window.dag.executeFrameSync({failure, parallel: false});
-          return Promise.resolve()
+          return Promise.resolve();
         })
         .then(function () {
 
@@ -641,7 +631,6 @@ $(document).ready(function(){
     });
 
     // trigger a hashchange event to initialize stuff to the initial hash
-
 
     $(editor).one('graphInitialised', function () {
       // console.log('graphInitialised');

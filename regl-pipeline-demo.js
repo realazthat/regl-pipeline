@@ -19,8 +19,6 @@ $(document).ready(function () {
     return nofloGraph;
   }
 
-
-
   let dag = pipeline.DAG({regl, resl, getNofloGraph, pipeline});
 
   // so we can access stuff easily from the console.
@@ -36,7 +34,7 @@ $(document).ready(function () {
   }
 
   dag.setAttached({ node: 'src-texture', inport: 'src', usage: 'static',
-                    value: 'https://raw.githubusercontent.com/realazthat/glsl-gaussian/master/assets/Storm%20Cell%20Over%20the%20Southern%20Appalachian%20Mountains-dsc_2303_0-256x256.png'})
+                    value: 'https://raw.githubusercontent.com/realazthat/glsl-gaussian/master/assets/Storm%20Cell%20Over%20the%20Southern%20Appalachian%20Mountains-dsc_2303_0-256x256.png'});
   nofloGraph.addEdge('src-texture', 'outresolution', 'blur', 'inresolution');
   nofloGraph.addEdge('src-texture', 'outviewport', 'blur', 'inviewport');
   nofloGraph.addEdge('src-texture', 'out', 'blur', 'in');
@@ -53,17 +51,14 @@ $(document).ready(function () {
   nofloGraph.addEdge('blur', 'outviewport', 'sink-canvas', 'inviewport');
   nofloGraph.addEdge('blur', 'outresolution', 'sink-canvas', 'inresolution');
 
-  function failure(err, node){
+  function failure (err, node) {
     console.error(`error for node ${node}`, err);
   }
 
   dag.compileFrame({failure, force: true, parallel: false})
-    .then(function(){
-      regl.frame(function(){
+    .then(function () {
+      regl.frame(function () {
         dag.executeFrameSync({failure, parallel: false});
       });
     });
-
-  
-
 });

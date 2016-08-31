@@ -1047,7 +1047,7 @@ class DAG {
     let levelOrder = dag.levelOrdering();
 
     for (let level of levelOrder) {
-      dag.visitLevelSync({level, visitor, failure})
+      dag.visitLevelSync({level, visitor, failure});
     }
   }
 
@@ -1129,10 +1129,10 @@ class DAG {
       //   this forces each level to complete before running the next one.
       //   an actual for-loop would start all the nodes compiling/executing at once.
     return levelOrder.reduce(function (promise, level) {
-        return promise.then(function () {
-          return dag.visitLevel({level, visitor, failure, parallel});
-        });
-      },
+      return promise.then(function () {
+        return dag.visitLevel({level, visitor, failure, parallel});
+      });
+    },
       Promise.resolve()
     );
   }
@@ -1225,7 +1225,7 @@ class DAG {
 
       if (componentOutportInfo.pass) {
         let {value} = dag.getCachedInport({node, inport: outport});
-                      
+
         results.push({outport, value: value});
         continue;
       }
@@ -1242,7 +1242,6 @@ class DAG {
       result.value = execute({context});
       result.outport = outport;
       results.push(result);
-
     }
 
     for (let {outport, value} of results) {
