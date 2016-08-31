@@ -2,6 +2,11 @@
 regl-pipeline
 ---
 
+**regl-pipeline-editor:**
+
+![](http://i.imgur.com/Ss8SPlK.png)
+
+
 
 ####Description
 
@@ -32,7 +37,7 @@ To run the demo, run:
     
     #browser should open with the demo
     cd regl-pipeline-editor
-    budo regl-pipeline-editor.js -d ../
+    budo regl-pipeline-editor/regl-pipeline-editor.js -s regl-pipeline-editor/regl-pipeline-editor.js -d .
 
     #browse to http://localhost:9966/regl-pipeline-editor/regl-pipeline-editor.html
 ```
