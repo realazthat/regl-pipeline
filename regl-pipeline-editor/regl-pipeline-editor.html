@@ -3,7 +3,11 @@
   <head>
     <title>Graph Editor Demo</title>
     <meta charset="utf-8">
-    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.1.0/jquery.min.js"></script>
+
+    <!-- <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.1.0/jquery.min.js"></script> -->
+
+
+    <script type="text/javascript" src="regl-pipeline-editor.js"> </script>
 
     <!-- Latest compiled and minified CSS -->
     <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css" integrity="sha384-BVYiiSIFeK1dGmJRAkycuHAHRg32OmUcww7on3RYdg4Va+PmSTsz/K68vbdEjh4u" crossorigin="anonymous">
@@ -23,8 +27,6 @@
     <script src="../bower_components/ease-djdeath/index.js"></script>
     <script src="../bower_components/react.animate-djdeath/react.animate.js"></script>
 
-    <!-- Browserify Libraries -->
-    <script src="../bower_components/the-graph/build/noflo.js"></script>
 
     <!-- Custom elements -->
     <link rel="import" href="../bower_components/polymer/polymer.html">
@@ -278,11 +280,10 @@
       </table>
     </div>
     <div id="loading" style="position:absolute; top:10px; left:10px; background-color:white; padding:10px; border-radius:5px;">
-      <img src="loading.gif"/>
+      <img src="../bower_components/the-graph/the-graph-editor/loading.gif"/>
       <div id="loading-message">loading custom elements...</div>
     </div>
 
 
-    <script type="text/javascript" src="/regl-pipeline-editor.js"> </script>
   </body>
 </html>
