@@ -2,6 +2,9 @@
 const clone = require('clone');
 
 const framebuffer = {
+  name: 'REGL FBO',
+  icon: 'television',
+  description: 'FBO for writing',
   inports: [
     {name: 'texture', usage: 'static'},
     {name: 'format', usage: 'static', initial: 'rgba'},

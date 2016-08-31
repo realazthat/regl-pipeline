@@ -66,45 +66,25 @@ $(document).ready(function(){
       }
     };
 
-    library['brute-gaussian'] = {
-      name: 'Brute Gaussian',
-      description: 'Brute Gaussian Filter',
-      icon: 'gears',
-      inports: pipeline.components['brute-gaussian'].inports,
-      outports: pipeline.components['brute-gaussian'].outports
-    };
 
-    library.texture = {
-      name: 'RESL/REGL Texture',
-      description: 'Source texture loaded from resl',
-      icon: 'image',
-      inports: pipeline.components.texture.inports,
-      outports: pipeline.components.texture.outports
-    };
+    for (let component of Object.keys(pipeline.components)) {
+      let componentInfo = pipeline.components[component];
+      library[component] = {
+        name: componentInfo.name,
+        description: componentInfo.description,
+        icon: componentInfo.icon,
+        inports: clone(componentInfo.inports),
+        outports: clone(componentInfo.outports)
+      };
+    }
 
-    library.framebuffer = {
-      name: 'REGL FBO',
-      description: 'FBO for writing',
-      icon: 'television',
-      inports: pipeline.components.framebuffer.inports,
-      outports: pipeline.components.framebuffer.outports
-    };
-
-    library.canvas = {
-      name: 'REGL Canvas',
-      description: 'Draws to the regl canvas',
-      icon: 'television',
-      inports: pipeline.components.canvas.inports,
-      outports: pipeline.components.canvas.outports
-    };
-
-    library.slider = {
-      name: 'Slider',
-      description: 'Choose a number',
-      icon: 'sliders',
-      inports: [{name: 'name'}, {name: 'min'}, {name: 'max'}, {name: 'step'}],
-      outports: [{name: 'out'}]
-    };
+    // library.slider = {
+    //   name: 'Slider',
+    //   description: 'Choose a number',
+    //   icon: 'sliders',
+    //   inports: [{name: 'name'}, {name: 'min'}, {name: 'max'}, {name: 'step'}],
+    //   outports: [{name: 'out'}]
+    // };
 
     // add all the components to the menu
     Object.keys(library).forEach(function (component) {

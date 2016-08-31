@@ -3,6 +3,9 @@ const clone = require('clone');
 const quad = require('glsl-quad');
 
 let canvas = {
+  name: 'REGL Canvas',
+  description: 'Draws to the regl canvas',
+  icon: 'television',
   inports: [{name: 'inviewport'}, {name: 'inresolution'}, {name: 'in'},
 
             {name: 'format', usage: 'static', initial: 'rgba'}],

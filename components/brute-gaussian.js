@@ -4,6 +4,9 @@ const quad = require('glsl-quad');
 const nunjucks = require('nunjucks');
 
 let gaussian = {
+  name: "Brute Gaussian",
+  description: "Brute Gaussian Filter",
+  icon: 'gears',
   inports: [{name: 'sigma'}, {name: 'radius'},
             {name: 'inviewport'}, {name: 'inresolution'}, {name: 'in'},
 
