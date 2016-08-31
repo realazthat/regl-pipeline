@@ -362,10 +362,10 @@ gaussian.execute.out = function ({context}) {
   params.in_channel = context.require('in');
   params.framebuffer = context.require('framebuffer');
 
-  params.inresolution = context.evaluate('inresolution');
-  params.inviewport = context.evaluate('inviewport');
-  params.outviewport = context.evaluate('outviewport');
-  params.outresolution = context.evaluate('outresolution');
+  params.inresolution = context.require('inresolution');
+  params.inviewport = context.require('inviewport');
+  params.outviewport = context.require('outviewport');
+  params.outresolution = context.require('outresolution');
   params.format = context.statically('format');
 
   params.sigma = context.require('sigma');
