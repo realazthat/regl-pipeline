@@ -21,7 +21,9 @@ See `regl-pipeline-demo.js` for usage.
 branch | demo
 -------|-------
 master | [regl-pipeline-editor-demo](https://realazthat.github.io/regl-pipeline/master/www/regl-pipeline-editor/regl-pipeline-editor.html)
+master | [regl-pipeline-demo](https://realazthat.github.io/regl-pipeline/master/www/regl-pipeline-demo/index.html)
 develop | [regl-pipeline-editor-demo](https://realazthat.github.io/regl-pipeline/develop/www/regl-pipeline-editor/regl-pipeline-editor.html)
+develop | [regl-pipeline-demo](https://realazthat.github.io/regl-pipeline/develop/www/regl-pipeline-demo/index.html)
 
 ####Run the demo
 
