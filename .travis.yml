@@ -18,7 +18,5 @@ install:
   - npm install --global browserify
   - npm install
 script:
-  - #npm run mytest
-  - #npm run build
   - bash scripts/build.sh
   - bash scripts/publish-static-demos.sh
