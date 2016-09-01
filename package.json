@@ -14,8 +14,10 @@
   "license": "MIT",
   "semistandard": {
     "ignore": [
-      "dist/*",
-      "www/*"
+      "/dist/**",
+      "/www/**",
+      "/node_modules/**",
+      "/bower_components/**"
     ]
   },
   "dependencies": {
@@ -70,6 +72,6 @@
     "mytest": "semistandard | snazzy",
     "build": "npm run build-script && npm run build-demo",
     "build-script": "mkdir -p ./dist && browserify regl-pipeline.js --standalone regl-pipeline > ./dist/regl-pipeline.js",
-    "build-editor": "node scripts/build-editor.js"
+    "build-demo": "mkdir -p ./www/regl-pipeline-demo/ && browserify ./regl-pipeline-demo.js | indexhtmlify > ./www/regl-pipeline-demo/index.html"
   }
 }
