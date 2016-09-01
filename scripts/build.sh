@@ -20,7 +20,7 @@ browserify ./regl-pipeline-editor/regl-pipeline-editor.js > ./www/regl-pipeline-
 # build  regl-pipeline-demo
 mkdir -p ./www/regl-pipeline-demo/
 browserify ./regl-pipeline-demo.js > ./www/regl-pipeline-demo/regl-pipeline-demo.js
-cat > ./www/regl-pipeline-demo/regl-pipeline-demo.html << EOL
+cat > ./www/regl-pipeline-demo/index.html << EOL
 <!DOCTYPE html><html lang="en"><head><title>regl-pipeline-demo</title><meta charset="utf-8"></head>
 <body><script src="regl-pipeline-demo.js"></script></body></html>
 EOL
