@@ -69,7 +69,7 @@
   ],
   "scripts": {
     "mytest": "semistandard | snazzy",
-    "build": "npm run build-script",
+    "build": "npm run build-script && npm run build-examples",
     "build-size": "mkdir -p ./www && browserify --full-paths regl-pipeline.js | discify > www/size.html",
     "build-script": "mkdir -p ./dist && browserify regl-pipeline.js --standalone regl-pipeline > ./dist/regl-pipeline.js",
     "build-examples": "node scripts/build-examples.js"
