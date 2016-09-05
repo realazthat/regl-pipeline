@@ -2,6 +2,7 @@
 const clone = require('clone');
 const assert = require('assert');
 const ExtendableError = require('es6-error');
+const {MSTimer} = require('./regl-pipeline-timer.js');
 
 // 1. pull static data in to each inport and place it in cache
 //    * check if source changed, usage changed etc. if so mark it as statically changed for this frame
@@ -241,14 +242,346 @@ class NodeExecutionContext {
   }
 }
 
+
+
+class UserType {
+  constructor(){
+    
+  }
+
+  parse({$, element}) {
+  
+  }
+  
+  unparse ({$, element, value}) {
+
+  }
+
+  render ({nunjucks, name, value}) {
+
+  }
+}
+
+class FloatSliderType extends UserType{
+  constructor({min, max, initial, step}){
+    super();
+    this.min = min;
+    this.max = max;
+    this.initial = initial;
+    this.step = step;
+  }
+
+  parse({$, element}) {
+    return {value: parseFloat($(element).val())};
+  }
+
+  unparse({$, element, value}) {
+    $(element).val(value);
+  }
+
+  render({nunjucks, name, value}) {
+    let params = {name, value, min: this.min, max: this.max, step: this.step};
+    return nunjucks.renderString('<input type="range" min="{{min}}" max="{{max}} step="{{step}}" value="{{value}}" />', params);
+  }
+}
+
+class IntSliderType extends UserType{
+  constructor({min, max, step}){
+    super();
+    this.min = min;
+    this.max = max;
+    this.step = step;
+  }
+
+  parse({$, element}) {
+    return {value: parseInt($(element).val())};
+  }
+
+  unparse({$, element, value}) {
+    $(element).val(value);
+  }
+
+  render({nunjucks, name, value}) {
+    let params = {name, value, min: this.min, max: this.max, step: this.step};
+    return nunjucks.renderString('<input type="range" min="{{min}}" max="{{max}} step="{{step}}" value="{{value}}" />', params);
+  }
+}
+
+class TextInputType extends UserType{
+  constructor(){
+    super();
+  }
+
+  parse({$, element}) {
+    return {value: $(element).val()};
+  }
+
+  unparse({$, element, value}) {
+    $(element).val(value);
+  }
+
+  render({nunjucks, name, value}) {
+    let params = {name, value};
+    return nunjucks.renderString('<input type="text" value="{{value}}" />', params);
+  }
+}
+
+class FloatInputType extends UserType{
+  constructor({places = 2}){
+    super();
+    this.places = 2;
+  }
+
+  parse({$, element}) {
+    return {value: parseFloat($(element).val())};
+  }
+
+  unparse({$, element, value}) {
+    $(element).val(value);
+  }
+
+  render({nunjucks, name, value}) {
+    let params = {name, value, places: this.places};
+    return nunjucks.renderString('<input type="number" value="{{parseFloat(value).toFixed(places)}}" />', params);
+  }
+}
+
+class IntInputType extends UserType{
+  constructor(){
+    super();
+  }
+
+  parse({$, element}) {
+    return {value: parseInt($(element).val())};
+  }
+
+  unparse({$, element, value}) {
+    $(element).val(value);
+  }
+
+  render({nunjucks, name, value}) {
+    let params = {name, value};
+    return nunjucks.renderString('<input type="number" value="{{value}}" />', params);
+  }
+}
+
+class TextAreaInputType extends UserType{
+  constructor(){
+    super();
+  }
+
+  parse({$, element}) {
+    return {value: $(element).val()};
+  }
+
+  unparse({$, element, value}) {
+    $(element).val(value);
+  }
+
+  render({nunjucks, name, value}) {
+    let params = {name, value};
+    return nunjucks.renderString('<textarea>{{value}}</textarea>"', params);
+  }
+}
+
+class JSONInputType extends UserType{
+  constructor(){
+    super();
+  }
+
+  parse({$, element}) {
+    return {value: JSON.parse($(element).val())};
+  }
+
+  unparse({$, element, value}) {
+    $(element).val(JSON.stringify(value));
+  }
+
+  render({nunjucks, name, value}) {
+    let params = {name, value};
+    return nunjucks.renderString('<textarea>{{value}}</textarea>"', params);
+  }
+}
+class Dynamic {
+  constructor(value, ut = null) {
+    this.value = value;
+    this.ut = ut;
+  }
+}
+
+class Static {
+  constructor(value, ut = null) {
+    this.value = value;
+    this.ut = ut;
+  }
+}
+
+class SugaryNodeInport {
+  constructor({dag, node, inport}) {
+    if (!dag.hasInport({node, inport})) {
+      throw new Error(`inport ${dag.portStr({node, inport})} does not exist`);
+    }
+
+    this.dag = dag;
+    this.node = node;
+    this.inport = inport;
+  }
+}
+
+class SugaryNodeOutport {
+  constructor({dag, node, outport}) {
+    if (!dag.hasOutport({node, outport})) {
+      throw new Error(`outport ${dag.portStr({node, outport})} does not exist`);
+    }
+
+    this.dag = dag;
+    this.node = node;
+    this.outport = outport;
+  }
+
+  value () {
+    let dag = this.dag;
+    let node = this.node;
+    let outport = this.outport;
+
+    let {value} = dag.getCachedOutport({node, outport});
+    return value;
+  }
+}
+
+
+let accessHandler = {
+  get: function(obj, prop) {
+    return obj.__getitem__(prop);
+  },
+  set: function(obj, prop, value) {
+    return obj.__setitem__(prop, value);
+  }
+};
+
+class SugaryNodeInports {
+  constructor({dag, node}) {
+    this.dag = dag;
+    this.node = node;
+  }
+
+  __setitem__(inport, value) {
+    let dag = this.dag;
+    let node = this.node;
+    dag.checkInport({node, inport});
+
+    // TODO: make sure value is not any other type of sugar class
+
+    if (value instanceof SugaryNodeOutport) {
+      dag.connect({from: value.node, outport: value.outport, to: node, inport: inport});
+    } else if (value instanceof Dynamic) {
+      let ut = null;
+      if (value.ut !== null && value.ut !== undefined) {
+        ut = value.ut;
+      }
+      dag.setAttached({node, inport, value: value.value, usage: 'dynamic', ut});
+    } else if (value instanceof Static) {
+      let ut = null;
+      if (value.ut !== null && value.ut !== undefined) {
+        ut = value.ut;
+      }
+      dag.setAttached({node, inport, value: value.value, usage: 'static', ut});
+    } else {
+      dag.setAttached({node, inport, value, usage: 'static'});
+    }
+  }
+
+  __getitem__(inport) {
+    let dag = this.dag;
+    let node = this.node;
+    return new SugaryNodeInport({dag, node, inport});
+  }
+
+  __keys__() {
+    let dag = this.dag;
+    let node = this.node;
+    return dag.inports({node});
+  }
+}
+
+class SugaryNodeOutports {
+  constructor({dag, node}) {
+    this.dag = dag;
+    this.node = node;
+  }
+
+  __setitem__(outport, value) {
+    let dag = this.dag;
+    let node = this.node;
+
+    dag.checkOutport({node,outport});
+
+    // TODO: make sure value is not any other type of sugar class
+
+    if (value instanceof SugaryNodeInport) {
+      dag.connect({from: value.node, inport: value.inport, to: node, outport: outport});
+      return;
+    }
+
+
+    throw new Error('Cannot assign a value to an outport, you can only assign an inport to an outport');
+  }
+
+  __getitem__(outport) {
+    let dag = this.dag;
+    let node = this.node;
+    dag.checkOutport({node,outport});
+
+    return new SugaryNodeOutport({dag, node, outport});
+  }
+}
+
+class SugaryNode {
+  constructor({dag, node}) {
+    this.dag = dag;
+    this.node = node;
+    this.i = new Proxy(new SugaryNodeInports({dag, node}), accessHandler);
+    this.o = new Proxy(new SugaryNodeOutports({dag, node}), accessHandler);
+  }
+}
+
 class DAG {
-  constructor ({regl, resl, getNofloGraph, pipeline}) {
+  constructor ({regl, resl, getNofloGraph, pipeline, $ = null, rollingSamples = 20}) {
     this.regl = regl;
     this.resl = resl;
     this.getNofloGraph = getNofloGraph;
     this.pipeline = pipeline;
     this.frame = 0 | 0;
     this.counter = 0 | 0;
+    this.timers = {time: {}};
+    this.timers.time.executeFrameSync = new MSTimer({rollingSamples});
+    this.$ = $;
+
+  }
+
+  /**
+   * Syntax sugar access.
+   *
+   * Two overloads:
+   *
+   * n(node,component) creates a new node, and returns a sugary handle to it.
+   *
+   * n(node) returns a sugary handle to an existing node.
+   */
+  n (node, component = null) {
+    if (component !== null) {
+      this.getNofloGraph().addNode(node, component, {});
+      this.initializeNode({node});
+    }
+
+    return new SugaryNode({dag: this, node});
+  }
+
+  connect({from, outport, to, inport}) {
+    this.checkOutport({node: from, outport});
+    this.checkInport({node: to, inport});
+
+    this.getNofloGraph().addEdge(from, outport, to, inport);
   }
 
   component ({node}) {
@@ -308,7 +641,7 @@ class DAG {
       }
     }
 
-    throw new Error(`Cannot find inport "${inport}" on node "${node}" (of component ${this.component({node})}`);
+    throw new Error(`Cannot find inport "${inport}" on node "${node}" (of component ${this.component({node})})`);
   }
 
   componentOutportInfo ({node = null, component = null, outport}) {
@@ -320,7 +653,7 @@ class DAG {
       }
     }
 
-    throw new Error(`Cannot find inport "${outport}" on node "${node}" (of component ${this.component({node})}`);
+    throw new Error(`Cannot find inport "${outport}" on node "${node}" (of component ${this.component({node})})`);
   }
 
   checkInport ({node, inport}) {
@@ -336,8 +669,16 @@ class DAG {
   hasAttached ({node, inport}) {
     this.checkInport({node, inport});
 
-    let nofloInitialValue = this._nofloGetInitialValue({node, inport});
-    return nofloInitialValue !== undefined;
+    let metadata = this.metadata({node, setup: true});
+
+    if (metadata === undefined || metadata.attached === undefined || !metadata.attached.hasOwnProperty(inport)) {
+      return false;
+    }
+
+    return metadata.attached[inport].attached;
+
+    // let nofloInitialValue = this._nofloGetInitialValue({node, inport});
+    // return nofloInitialValue !== undefined;
   }
 
   checkAttachedUsage ({usage}) {
@@ -346,7 +687,7 @@ class DAG {
     }
   }
 
-  setAttached ({node, inport, value, usage}) {
+  setAttached ({node, inport, value, usage, ut = null}) {
     // this.checkInport({node, inport});
     this.checkAttachedUsage({usage});
 
@@ -375,7 +716,7 @@ class DAG {
       staticChanged = this.frame;
     }
 
-    metadata.attached[inport] = {value, usage, valueChanged, staticChanged};
+    metadata.attached[inport] = {value, usage, valueChanged, ut, staticChanged, attached: true};
 
     this.getNofloGraph().removeInitial(node, inport);
     this.getNofloGraph().addInitial(value, node, inport, {});
@@ -388,14 +729,18 @@ class DAG {
     let usage = 'static';
     let valueChanged;
     let staticChanged;
+    let ut;
 
     if (metadata !== undefined && metadata.attached !== undefined && metadata.attached[inport] !== undefined) {
-      usage = metadata.attached[inport].usage;
-      valueChanged = metadata.attached[inport].valueChanged;
-      staticChanged = metadata.attached[inport].staticChanged;
+      if (metadata.attached[inport].attached) {
+        usage = metadata.attached[inport].usage;
+        valueChanged = metadata.attached[inport].valueChanged;
+        staticChanged = metadata.attached[inport].staticChanged;
+        ut = metadata.attached[inport].ut;
+      }
     }
 
-    return {value, usage, valueChanged, staticChanged};
+    return {value, ut, usage, valueChanged, staticChanged};
   }
 
   removeAttached ({node, inport}) {
@@ -514,21 +859,20 @@ class DAG {
     } else if (componentInportInfo.usage === 'dynamic') {
       return 'dynamic';
     } else if (componentInportInfo.usage === undefined || componentInportInfo.usage === 'inherit') {
-      if (this.hasAttached({node, inport})) {
-        let {usage} = this.getAttached({node, inport});
-        assert(usage === 'static' || usage === 'dynamic');
-        return usage;
-      }
 
       if (this.hasInportConnection({node, inport})) {
         let usage = this.connectedInportUsage({node, inport});
         assert(usage === 'static' || usage === 'dynamic');
         return usage;
       }
+      if (this.hasAttached({node, inport})) {
+        let {usage} = this.getAttached({node, inport});
+        assert(usage === 'static' || usage === 'dynamic');
+        return usage;
+      }
 
       // no value attached, so the value of none/undefined is static
       return 'static';
-      // throw new Error(`Node "${node}" has no connection at inport "${inport}"`);
     }
     throw new Error(`Component "${this.component({node})}" has an invalid usage "${componentInportInfo.usage}"`);
   }
@@ -548,13 +892,6 @@ class DAG {
       }
 
       for (let inport of depends) {
-        if (this.hasAttached({node, inport})) {
-          let {usage} = this.getAttached({node, inport});
-          if (usage === 'dynamic') {
-            return 'dynamic';
-          }
-        }
-
         if (this.hasInportConnection({node, inport})) {
           let inportUsage = this.effectiveInportUsage({node, inport});
           assert(inportUsage === 'static' || inportUsage === 'dynamic');
@@ -562,7 +899,13 @@ class DAG {
           if (inportUsage === 'dynamic') {
             return 'dynamic';
           }
+        } else if (this.hasAttached({node, inport})) {
+          let {usage} = this.getAttached({node, inport});
+          if (usage === 'dynamic') {
+            return 'dynamic';
+          }
         }
+
       }
 
       return 'static';
@@ -582,12 +925,33 @@ class DAG {
     return false;
   }
 
+  componentHasOutport ({component, outport}) {
+    let componentInfo = this.componentInfo({component});
+
+    for (let outportInfo of componentInfo.outports) {
+      if (outportInfo.name === outport) {
+        return true;
+      }
+    }
+
+    return false;
+  }
+
   hasInport ({node = null, component = null, inport}) {
     if (component === null) {
       component = this.component({node});
     }
 
     return this.componentHasInport({component, inport});
+  }
+
+
+  hasOutport ({node = null, component = null, outport}) {
+    if (component === null) {
+      component = this.component({node});
+    }
+
+    return this.componentHasOutport({component, outport});
   }
 
   componentSanity ({component}) {
@@ -965,7 +1329,7 @@ class DAG {
               return Promise.resolve(compile({context}));
             })
             .then(function (compiled) {
-              console.log('saving compiled: ', compiled);
+
               dag.saveCompiled({node, outport, compiled});
               return Promise.resolve();
             });
@@ -1160,7 +1524,9 @@ class DAG {
       });
   }
 
-  executeFrameSync ({failure, parallel = true}) {
+  executeFrameSync ({failure}) {
+    this.timers.time.executeFrameSync.tick().start();
+
     let dag = this;
 
     function visitor (node) {
@@ -1168,6 +1534,9 @@ class DAG {
       dag.executeSync({node, runtime: 'dynamic'});
     }
     dag.orderedVisitSync({visitor, failure});
+
+
+    this.timers.time.executeFrameSync.end().tock();
   }
 
   executeSync ({node, runtime, force = false}) {
@@ -1188,7 +1557,7 @@ class DAG {
 
       assert(usage === 'static' || usage === 'dynamic');
 
-      console.log(`runtime: ${runtime}, usage: ${usage}`);
+      // console.log(`runtime: ${runtime}, usage: ${usage}`);
 
       if (force) {
         metadata.cached.outports[outport].staticChanged = undefined;
@@ -1254,6 +1623,157 @@ class DAG {
 
     return results;
   }
+
+
+  compareProps(a,b) {
+    let cmp = a.node.localeCompare(b.node);
+
+    if (cmp !== 0) {
+      return cmp;
+    }
+
+    return a.inport.localeCompare(b.inport);
+  }
+
+  getProps() {
+    let props = [];
+
+    for (let node of this.nodes())
+    {
+      for (let inport of this.inports({node})) {
+        if (dag.hasInportConnection({node, inport})) {
+          continue;
+        }
+
+        if (!dag.hasAttached({node, inport})) {
+          continue;
+        }
+
+        let usage = this.effectiveInportUsage({node,inport});
+
+        let {value, ut} = this.getAttached({node,inport});
+
+        if (usage === 'static' && (ut === null || ut === undefined)) {
+          continue;
+        }
+
+        let name = this.getPropName({node,inport});
+        props.push({name, node, inport, value, usage, ut});
+      }
+    }
+
+    props.sort(this.compareProps);
+
+    return props;
+  }
+
+  setProps({props}) {
+    for (let {name, node, inport, value, usage, ut} of props) {
+      if (dag.hasInportConnection({node, inport})) {
+        continue;
+      }
+
+      if (!dag.hasAttached({node, inport})) {
+        continue;
+      }
+
+      this.setAttached({node,inport, value, ut, usage});
+    }
+  }
+
+  getPropName({node, inport}) {
+    return `${this.portStr({node,inport})}`;
+  }
+
+  getUserTypeInstance({ut}) {
+    let utClass = TextInputType;
+    let params = {};
+    if (ut !== null && ut !== undefined) {
+      if (!pipeline.ut.hasOwnProperty(ut.type)) {
+        throw new Error(`No such user type (ut): "${ut.type}"`);
+      }
+      utClass = pipeline.ut[ut.type];
+      params = ut.params;
+    }
+
+    let utInstance = new utClass(params);
+
+    return utInstance;
+  }
+
+  renderProps ({$, nunjucks, element}) {
+    let dag = this;
+
+
+    let $element = $(element);
+
+
+    let name2tr = new Map();
+    $element.find('tbody > tr').each(function(){
+      let $tr = $(this);
+
+      let name = $tr.find('th').eq(0).attr('data-prop-name');
+
+      name2tr.set(name, $tr);
+    });
+
+    let props = this.getProps();
+
+
+    let template = `
+      <table class="regl-pipeline-props-table">
+        <thead>
+          <tr>
+            <th>Name</th>
+            <th>Value</th>
+          </tr>
+        </thead>
+        <tbody>
+        </tbody>
+      </table>
+      `;
+
+    if ($element.find('.regl-pipeline-props-table').length === 0) {
+      $(template).appendTo($element);
+    }
+    let $table = $element.find('.regl-pipeline-props-table');
+    let $tbody = $table.find('tbody');
+
+    // for each prop,
+    // 1. read the value from the DOM if available, 2. save it,
+    // 3. set the value back to the DOM if necessary.
+    for (let i = 0; i < props.length; ++i) {
+      let prop = props[i];
+      let {name, node, inport, value, usage, ut} = prop;
+
+      if (!name2tr.has(name)) {
+        let utInstance = dag.getUserTypeInstance({ut});
+
+        $tbody.append(nunjucks.renderString(`
+          <tr>
+            <th class="regl-pipeline-prop-name" data-prop-name="{{name}}">{{name}}</th>
+            <td class="regl-pipeline-prop-value-cell">${utInstance.render({nunjucks, name, value})}</td>
+          </tr>`, {name}));
+        continue;
+      }
+
+      let $tr = name2tr.get(name);
+      let $value = $tr.find('.regl-pipeline-prop-value-cell').children();
+
+      let utInstance = dag.getUserTypeInstance({ut});
+
+      // TODO: allow usage changes here
+      ({value} = utInstance.parse({$, element: $value}));
+
+      props[i] = {name, node, inport, value, usage, ut};
+    }
+
+    dag.setProps({props});
+    // TODO: remove stale property rows.
+    // TODO: sort rows if they are out of order.
+  }
+
+
 }
 
 let pipeline = {
@@ -1261,8 +1781,19 @@ let pipeline = {
     blur: {}
   },
 
-  DAG: function ({regl, resl, getNofloGraph, pipeline}) { return new DAG({regl, resl, getNofloGraph, pipeline}); }
+  DAG: function ({regl, resl, getNofloGraph, pipeline}) { return new DAG({regl, resl, getNofloGraph, pipeline}); },
+  Dynamic: function(value, ut = null) { return new Dynamic(value, ut); },
+  Static: function(value, ut = null) { return new Static(value, ut); },
+  ut: {
+    frange: FloatSliderType,
+    irange: IntSliderType,
+    finput: FloatInputType,
+    iinput: IntInputType,
+    text: TextInputType,
+    json: JSONInputType
+  }
 };
+
 
 pipeline.components.texture = require('./components/texture.js')();
 pipeline.components['brute-gaussian'] = require('./components/brute-gaussian.js')();
