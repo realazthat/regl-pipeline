@@ -26,11 +26,11 @@ function buildADemo ({BUILDDIR, MAINJSSRC, MAINJSDST, MAINHTMLFILE, TITLE, asset
     if (err) {
       throw err;
     }
-    ncp('assets', `${BUILDDIR}/assets`, function (err) {
-      if (err) {
-        throw err;
-      }
-    });
+    // ncp('assets', `${BUILDDIR}/assets`, function (err) {
+    //   if (err) {
+    //     throw err;
+    //   }
+    // });
 
     let b = browserify({debug: true});
     b.add(MAINJSSRC);
