@@ -40,7 +40,6 @@
   "devDependencies": {
     "browserify": "^13.1.0",
     "disc": "^1.3.2",
-    "glsl-numerify": "1.0.0",
     "indexhtmlify": "^1.3.0",
     "microseconds": "^0.1.0",
     "mkdirp": "^0.5.1",
@@ -71,6 +70,8 @@
   "scripts": {
     "mytest": "semistandard | snazzy",
     "build": "npm run build-script",
-    "build-script": "mkdir -p ./dist && browserify regl-pipeline.js --standalone regl-pipeline > ./dist/regl-pipeline.js"
+    "build-size": "mkdir -p ./www && browserify --full-paths regl-pipeline.js | discify > www/size.html",
+    "build-script": "mkdir -p ./dist && browserify regl-pipeline.js --standalone regl-pipeline > ./dist/regl-pipeline.js",
+    "build-examples": "node scripts/build-examples.js"
   }
 }
