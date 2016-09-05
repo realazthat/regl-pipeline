@@ -9,9 +9,8 @@ function approxRollingAverage (avg, newSample, N) {
   return avg;
 }
 
-
 class GenericTimer {
-  constructor({rollingSamples, timer}) {
+  constructor ({rollingSamples, timer}) {
     this.timer = timer;
     this.rollingSamples = rollingSamples;
     this.tickStartTime = this.timer();
@@ -22,8 +21,7 @@ class GenericTimer {
     this.tickInTime = 0;
     this.tickToTickDelta = 0;
 
-
-    this.ticks = 0|0;
+    this.ticks = 0 | 0;
     this.rollingTickInTime = 0;
     this.rollingTickSkipTime = 0;
     this.rollingTickTotalTime = 0;
@@ -33,31 +31,28 @@ class GenericTimer {
     let tickStartTime = this.timer();
     let tickSkipTime = this.tickEndTime - this.tickStartTime;
 
-    this.ticks = ((this.ticks|0) + (1|0))|0;
+    this.ticks = ((this.ticks | 0) + (1 | 0)) | 0;
     this.rollingTickSkipTime = approxRollingAverage(this.rollingTickSkipTime, tickSkipTime, this.rollingSamples);
     this.tickStartTime = tickStartTime;
     this.tickInTime = 0;
     this.startTime = tickStartTime;
     this.endTime = tickStartTime;
 
-
     return this;
   }
 
-  start(){
+  start () {
     let startTime = this.timer();
     this.startTime = startTime;
 
-
     return this;
   }
 
-  end(){
+  end () {
     let endTime = this.timer();
     let inTime = endTime - this.startTime;
 
     this.tickInTime += inTime;
-
 
     this.endTime = endTime;
 
@@ -80,8 +75,8 @@ class GenericTimer {
 }
 
 class MSTimer extends GenericTimer {
-  constructor({rollingSamples}) {
-    super({rollingSamples, timer: () => μs.now()/1000000});
+  constructor ({rollingSamples}) {
+    super({rollingSamples, timer: () => μs.now() / 1000000});
   }
 }
 
@@ -90,8 +85,8 @@ class MSTimer extends GenericTimer {
  *
  * ```regl({profile: true, ... other params})```
  */
-class ReglCpuTimer extends GenericTimer{
-  constructor({rollingSamples, reglCmd}) {
+class ReglCpuTimer extends GenericTimer {
+  constructor ({rollingSamples, reglCmd}) {
     super({rollingSamples, timer: () => reglCmd.stats.cpuTime});
   }
 }
@@ -107,12 +102,12 @@ class ReglCpuTimer extends GenericTimer{
  * and wait until the next Event Loop tick to get accurate results (for example,
  * using `setTimeout()`). As a result, this class is likely broken.
  */
-class ReglGpuTimer extends GenericTimer{
-  constructor({rollingSamples, reglCmd}) {
-    super({rollingSamples, timer: () => reglCmd.stats.gpuTime});
-  }
-}
+// class ReglGpuTimer extends GenericTimer {
+//   constructor ({rollingSamples, reglCmd}) {
+//     super({rollingSamples, timer: () => reglCmd.stats.gpuTime});
+//   }
+// }
 
 module.exports = {
   GenericTimer, MSTimer, ReglCpuTimer
-}
+};
