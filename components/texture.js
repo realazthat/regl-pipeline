@@ -51,15 +51,15 @@ texture.compile.out = function ({context}) {
     }
 
     if (!context.connected('src')) {
-      let width = context.evaluate('width');
-      let height = context.evaluate('height');
+      let width = context.require('width');
+      let height = context.require('height');
       params.width = width;
       params.height = height;
       let texture = context.regl.texture(params);
       return resolve({texture, width, height});
     }
 
-    let src = context.evaluate('src');
+    let src = context.require('src');
 
     context.resl({
       manifest: {
