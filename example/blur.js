@@ -1,5 +1,4 @@
 
-
 const regl = require('regl')({
   extensions: ['OES_texture_float']
 });
@@ -9,7 +8,7 @@ const pipeline = require('../regl-pipeline');
 const noflo = require('noflo');
 const nunjucks = require('nunjucks');
 
-$(document).ready(function(){
+$(document).ready(function () {
   // put the canvas in front of everything, but don't let it interfere with the
   // input events and steal focus etc.
   $('body > canvas')
@@ -18,7 +17,7 @@ $(document).ready(function(){
 
   // initialize the graph model
   let nofloGraph = new noflo.graph.Graph({options: {caseSensitive: true}});
-  function getNofloGraph(){
+  function getNofloGraph () {
     return nofloGraph;
   }
 
@@ -53,7 +52,6 @@ $(document).ready(function(){
   dag.n('sink').i.in = dag.n('blur').o.out;
   dag.n('sink').i.inresolution = dag.n('blur').o.outresolution;
   dag.n('sink').i.inviewport = dag.n('blur').o.outviewport;
-
 
   // a container element to let us control dynamic attachments/properties.
   let $props = $('<div />').appendTo($('body'));

@@ -242,17 +242,11 @@ class NodeExecutionContext {
   }
 }
 
-
-
 class UserType {
-  constructor(){
-    
+  parse ({$, element}) {
+
   }
 
-  parse({$, element}) {
-  
-  }
-  
   unparse ({$, element, value}) {
 
   }
@@ -262,8 +256,8 @@ class UserType {
   }
 }
 
-class FloatSliderType extends UserType{
-  constructor({min, max, initial, step}){
+class FloatSliderType extends UserType {
+  constructor ({min, max, initial, step}) {
     super();
     this.min = min;
     this.max = max;
@@ -271,153 +265,138 @@ class FloatSliderType extends UserType{
     this.step = step;
   }
 
-  parse({$, element}) {
+  parse ({$, element}) {
     return {value: parseFloat($(element).val())};
   }
 
-  unparse({$, element, value}) {
+  unparse ({$, element, value}) {
     $(element).val(value);
   }
 
-  render({nunjucks, name, value}) {
+  render ({nunjucks, name, value}) {
     let params = {name, value, min: this.min, max: this.max, step: this.step};
     return nunjucks.renderString('<input type="range" min="{{min}}" max="{{max}} step="{{step}}" value="{{value}}" />', params);
   }
 }
 
-class IntSliderType extends UserType{
-  constructor({min, max, step}){
+class IntSliderType extends UserType {
+  constructor ({min, max, step}) {
     super();
     this.min = min;
     this.max = max;
     this.step = step;
   }
 
-  parse({$, element}) {
+  parse ({$, element}) {
     return {value: parseInt($(element).val())};
   }
 
-  unparse({$, element, value}) {
+  unparse ({$, element, value}) {
     $(element).val(value);
   }
 
-  render({nunjucks, name, value}) {
+  render ({nunjucks, name, value}) {
     let params = {name, value, min: this.min, max: this.max, step: this.step};
     return nunjucks.renderString('<input type="range" min="{{min}}" max="{{max}} step="{{step}}" value="{{value}}" />', params);
   }
 }
 
-class TextInputType extends UserType{
-  constructor(){
-    super();
-  }
+class TextInputType extends UserType {
 
-  parse({$, element}) {
+  parse ({$, element}) {
     return {value: $(element).val()};
   }
 
-  unparse({$, element, value}) {
+  unparse ({$, element, value}) {
     $(element).val(value);
   }
 
-  render({nunjucks, name, value}) {
+  render ({nunjucks, name, value}) {
     let params = {name, value};
     return nunjucks.renderString('<input type="text" value="{{value}}" />', params);
   }
 }
 
-class FloatInputType extends UserType{
-  constructor({places = 2}){
+class FloatInputType extends UserType {
+  constructor ({places = 2}) {
     super();
     this.places = 2;
   }
 
-  parse({$, element}) {
+  parse ({$, element}) {
     return {value: parseFloat($(element).val())};
   }
 
-  unparse({$, element, value}) {
+  unparse ({$, element, value}) {
     $(element).val(value);
   }
 
-  render({nunjucks, name, value}) {
+  render ({nunjucks, name, value}) {
     let params = {name, value, places: this.places};
     return nunjucks.renderString('<input type="number" value="{{parseFloat(value).toFixed(places)}}" />', params);
   }
 }
 
-class IntInputType extends UserType{
-  constructor(){
-    super();
-  }
-
-  parse({$, element}) {
+class IntInputType extends UserType {
+  parse ({$, element}) {
     return {value: parseInt($(element).val())};
   }
 
-  unparse({$, element, value}) {
+  unparse ({$, element, value}) {
     $(element).val(value);
   }
 
-  render({nunjucks, name, value}) {
+  render ({nunjucks, name, value}) {
     let params = {name, value};
     return nunjucks.renderString('<input type="number" value="{{value}}" />', params);
   }
 }
 
-class TextAreaInputType extends UserType{
-  constructor(){
-    super();
-  }
-
-  parse({$, element}) {
+class TextAreaInputType extends UserType {
+  parse ({$, element}) {
     return {value: $(element).val()};
   }
 
-  unparse({$, element, value}) {
+  unparse ({$, element, value}) {
     $(element).val(value);
   }
 
-  render({nunjucks, name, value}) {
+  render ({nunjucks, name, value}) {
     let params = {name, value};
     return nunjucks.renderString('<textarea>{{value}}</textarea>"', params);
   }
 }
 
-class JSONInputType extends UserType{
-  constructor(){
-    super();
-  }
-
-  parse({$, element}) {
+class JSONInputType extends UserType {
+  parse ({$, element}) {
     return {value: JSON.parse($(element).val())};
   }
 
-  unparse({$, element, value}) {
+  unparse ({$, element, value}) {
     $(element).val(JSON.stringify(value));
   }
 
-  render({nunjucks, name, value}) {
+  render ({nunjucks, name, value}) {
     let params = {name, value};
     return nunjucks.renderString('<textarea>{{value}}</textarea>"', params);
   }
 }
 class Dynamic {
-  constructor(value, ut = null) {
+  constructor (value, ut = null) {
     this.value = value;
     this.ut = ut;
   }
 }
 
 class Static {
-  constructor(value, ut = null) {
+  constructor (value, ut = null) {
     this.value = value;
     this.ut = ut;
   }
 }
 
 class SugaryNodeInport {
-  constructor({dag, node, inport}) {
+  constructor ({dag, node, inport}) {
     if (!dag.hasInport({node, inport})) {
       throw new Error(`inport ${dag.portStr({node, inport})} does not exist`);
     }
@@ -429,7 +408,7 @@ class SugaryNodeInport {
 }
 
 class SugaryNodeOutport {
-  constructor({dag, node, outport}) {
+  constructor ({dag, node, outport}) {
     if (!dag.hasOutport({node, outport})) {
       throw new Error(`outport ${dag.portStr({node, outport})} does not exist`);
     }
@@ -449,23 +428,22 @@ class SugaryNodeOutport {
   }
 }
 
-
 let accessHandler = {
-  get: function(obj, prop) {
+  get: function (obj, prop) {
     return obj.__getitem__(prop);
   },
-  set: function(obj, prop, value) {
+  set: function (obj, prop, value) {
     return obj.__setitem__(prop, value);
   }
 };
 
 class SugaryNodeInports {
-  constructor({dag, node}) {
+  constructor ({dag, node}) {
     this.dag = dag;
     this.node = node;
   }
 
-  __setitem__(inport, value) {
+  __setitem__ (inport, value) {
     let dag = this.dag;
     let node = this.node;
     dag.checkInport({node, inport});
@@ -491,13 +469,13 @@ class SugaryNodeInports {
     }
   }
 
-  __getitem__(inport) {
+  __getitem__ (inport) {
     let dag = this.dag;
     let node = this.node;
     return new SugaryNodeInport({dag, node, inport});
   }
 
-  __keys__() {
+  __keys__ () {
     let dag = this.dag;
     let node = this.node;
     return dag.inports({node});
@@ -505,16 +483,16 @@ class SugaryNodeInports {
 }
 
 class SugaryNodeOutports {
-  constructor({dag, node}) {
+  constructor ({dag, node}) {
     this.dag = dag;
     this.node = node;
   }
 
-  __setitem__(outport, value) {
+  __setitem__ (outport, value) {
     let dag = this.dag;
     let node = this.node;
 
-    dag.checkOutport({node,outport});
+    dag.checkOutport({node, outport});
 
     // TODO: make sure value is not any other type of sugar class
 
@@ -523,21 +501,20 @@ class SugaryNodeOutports {
       return;
     }
 
-
     throw new Error('Cannot assign a value to an outport, you can only assign an inport to an outport');
   }
 
-  __getitem__(outport) {
+  __getitem__ (outport) {
     let dag = this.dag;
     let node = this.node;
-    dag.checkOutport({node,outport});
+    dag.checkOutport({node, outport});
 
     return new SugaryNodeOutport({dag, node, outport});
   }
 }
 
 class SugaryNode {
-  constructor({dag, node}) {
+  constructor ({dag, node}) {
     this.dag = dag;
     this.node = node;
     this.i = new Proxy(new SugaryNodeInports({dag, node}), accessHandler);
@@ -556,7 +533,6 @@ class DAG {
     this.timers = {time: {}};
     this.timers.time.executeFrameSync = new MSTimer({rollingSamples});
     this.$ = $;
-
   }
 
   /**
@@ -577,7 +553,7 @@ class DAG {
     return new SugaryNode({dag: this, node});
   }
 
-  connect({from, outport, to, inport}) {
+  connect ({from, outport, to, inport}) {
     this.checkOutport({node: from, outport});
     this.checkInport({node: to, inport});
 
@@ -859,7 +835,6 @@ class DAG {
     } else if (componentInportInfo.usage === 'dynamic') {
       return 'dynamic';
     } else if (componentInportInfo.usage === undefined || componentInportInfo.usage === 'inherit') {
-
       if (this.hasInportConnection({node, inport})) {
         let usage = this.connectedInportUsage({node, inport});
         assert(usage === 'static' || usage === 'dynamic');
@@ -905,7 +880,6 @@ class DAG {
             return 'dynamic';
           }
         }
-
       }
 
       return 'static';
@@ -944,7 +918,6 @@ class DAG {
 
     return this.componentHasInport({component, inport});
   }
-
 
   hasOutport ({node = null, component = null, outport}) {
     if (component === null) {
@@ -1329,7 +1302,6 @@ class DAG {
               return Promise.resolve(compile({context}));
             })
             .then(function (compiled) {
-
               dag.saveCompiled({node, outport, compiled});
               return Promise.resolve();
             });
@@ -1535,7 +1507,6 @@ class DAG {
     }
     dag.orderedVisitSync({visitor, failure});
 
-
     this.timers.time.executeFrameSync.end().tock();
   }
 
@@ -1624,8 +1595,7 @@ class DAG {
     return results;
   }
 
-
-  compareProps(a,b) {
+  compareProps (a, b) {
     let cmp = a.node.localeCompare(b.node);
 
     if (cmp !== 0) {
@@ -1635,12 +1605,13 @@ class DAG {
     return a.inport.localeCompare(b.inport);
   }
 
-  getProps() {
+  getProps () {
+    let dag = this;
+
     let props = [];
 
-    for (let node of this.nodes())
-    {
-      for (let inport of this.inports({node})) {
+    for (let node of dag.nodes()) {
+      for (let inport of dag.inports({node})) {
         if (dag.hasInportConnection({node, inport})) {
           continue;
         }
@@ -1649,15 +1620,15 @@ class DAG {
           continue;
         }
 
-        let usage = this.effectiveInportUsage({node,inport});
+        let usage = dag.effectiveInportUsage({node, inport});
 
-        let {value, ut} = this.getAttached({node,inport});
+        let {value, ut} = dag.getAttached({node, inport});
 
         if (usage === 'static' && (ut === null || ut === undefined)) {
           continue;
         }
 
-        let name = this.getPropName({node,inport});
+        let name = dag.getPropName({node, inport});
         props.push({name, node, inport, value, usage, ut});
       }
     }
@@ -1667,8 +1638,10 @@ class DAG {
     return props;
   }
 
-  setProps({props}) {
-    for (let {name, node, inport, value, usage, ut} of props) {
+  setProps ({props}) {
+    let dag = this;
+
+    for (let {node, inport, value, usage, ut} of props) {
       if (dag.hasInportConnection({node, inport})) {
         continue;
       }
@@ -1677,26 +1650,26 @@ class DAG {
         continue;
       }
 
-      this.setAttached({node,inport, value, ut, usage});
+      dag.setAttached({node, inport, value, ut, usage});
     }
   }
 
-  getPropName({node, inport}) {
-    return `${this.portStr({node,inport})}`;
+  getPropName ({node, inport}) {
+    return `${this.portStr({node, inport})}`;
   }
 
-  getUserTypeInstance({ut}) {
-    let utClass = TextInputType;
+  getUserTypeInstance ({ut}) {
+    let UTClass = TextInputType;
     let params = {};
     if (ut !== null && ut !== undefined) {
       if (!pipeline.ut.hasOwnProperty(ut.type)) {
         throw new Error(`No such user type (ut): "${ut.type}"`);
       }
-      utClass = pipeline.ut[ut.type];
+      UTClass = pipeline.ut[ut.type];
       params = ut.params;
     }
 
-    let utInstance = new utClass(params);
+    let utInstance = new UTClass(params);
 
     return utInstance;
   }
@@ -1704,12 +1677,10 @@ class DAG {
   renderProps ({$, nunjucks, element}) {
     let dag = this;
 
-
     let $element = $(element);
 
-
     let name2tr = new Map();
-    $element.find('tbody > tr').each(function(){
+    $element.find('tbody > tr').each(function () {
       let $tr = $(this);
 
       let name = $tr.find('th').eq(0).attr('data-prop-name');
@@ -1718,7 +1689,6 @@ class DAG {
     });
 
     let props = this.getProps();
-
 
     let template = `
       <table class="regl-pipeline-props-table">
@@ -1773,7 +1743,6 @@ class DAG {
     // TODO: sort rows if they are out of order.
   }
 
-
 }
 
 let pipeline = {
@@ -1782,18 +1751,18 @@ let pipeline = {
   },
 
   DAG: function ({regl, resl, getNofloGraph, pipeline}) { return new DAG({regl, resl, getNofloGraph, pipeline}); },
-  Dynamic: function(value, ut = null) { return new Dynamic(value, ut); },
-  Static: function(value, ut = null) { return new Static(value, ut); },
+  Dynamic: function (value, ut = null) { return new Dynamic(value, ut); },
+  Static: function (value, ut = null) { return new Static(value, ut); },
   ut: {
     frange: FloatSliderType,
     irange: IntSliderType,
     finput: FloatInputType,
     iinput: IntInputType,
     text: TextInputType,
+    textarea: TextAreaInputType,
     json: JSONInputType
   }
 };
-
 
 pipeline.components.texture = require('./components/texture.js')();
 pipeline.components['brute-gaussian'] = require('./components/brute-gaussian.js')();
