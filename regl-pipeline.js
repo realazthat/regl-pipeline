@@ -4,8 +4,9 @@ const assert = require('assert');
 const ExtendableError = require('es6-error');
 const {MSTimer} = require('./regl-pipeline-timer.js');
 const fs = require('fs');
+const path = require('path');
 const allthethemes = {
-  "uplink.css": fs.readFileSync(__dirname + '/theme/uplink.css')
+  'uplink.css': fs.readFileSync(path.join(__dirname, 'theme/uplink.css'))
 };
 
 // 1. pull static data in to each inport and place it in cache
@@ -269,13 +270,14 @@ class SliderType extends UserType {
     this.step = step;
   }
 
-  $slider({$, element}) {
+  $slider ({$, element}) {
     return $(element).find('input[name="slider"]');
   }
 
   unparse ({$, element, value}) {
-    if (this.parse({$,element}).value !== value)
+    if (this.parse({$, element}).value !== value) {
       this.$slider({$, element}).val(value);
+    }
   }
 
   render ({nunjucks, name, value}) {
@@ -312,8 +314,9 @@ class TextInputType extends UserType {
   }
 
   unparse ({$, element, value}) {
-    if (this.parse({$,element}).value !== value)
+    if (this.parse({$, element}).value !== value) {
       $(element).val(value);
+    }
   }
 
   render ({nunjucks, name, value}) {
@@ -333,8 +336,9 @@ class FloatInputType extends UserType {
   }
 
   unparse ({$, element, value}) {
-    if (this.parse({$,element}).value !== value)
+    if (this.parse({$, element}).value !== value) {
       $(element).val(value);
+    }
   }
 
   render ({nunjucks, name, value}) {
@@ -349,8 +353,9 @@ class IntInputType extends UserType {
   }
 
   unparse ({$, element, value}) {
-    if (this.parse({$,element}).value !== value)
+    if (this.parse({$, element}).value !== value) {
       $(element).val(value);
+    }
   }
 
   render ({nunjucks, name, value}) {
@@ -365,8 +370,9 @@ class TextAreaInputType extends UserType {
   }
 
   unparse ({$, element, value}) {
-    if (this.parse({$,element}).value !== value)
+    if (this.parse({$, element}).value !== value) {
       $(element).val(value);
+    }
   }
 
   render ({nunjucks, name, value}) {
@@ -381,8 +387,9 @@ class JSONInputType extends UserType {
   }
 
   unparse ({$, element, value}) {
-    if (this.parse({$,element}).value !== value)
+    if (this.parse({$, element}).value !== value) {
       $(element).val(JSON.stringify(value));
+    }
   }
 
   render ({nunjucks, name, value}) {
@@ -1756,7 +1763,7 @@ class DAG {
     // TODO: sort rows if they are out of order.
   }
 
-  theme({insertcss, theme = 'uplink'}){
+  theme ({insertcss, theme = 'uplink'}) {
     if (!allthethemes.hasOwnProperty(`${theme}.css`)) {
       throw new Error(`Invalid theme ${theme}`);
     }

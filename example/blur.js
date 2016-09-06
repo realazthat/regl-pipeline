@@ -72,7 +72,7 @@ $(document).ready(function () {
     .then(function () {
       // bind the properties to corresponding DOM inputs
       dag.renderProps({$, nunjucks, element: $props});
-      dag.theme({insertcss, theme: 'uplink'})
+      dag.theme({insertcss, theme: 'uplink'});
 
       // set a per-frame callback.
       regl.frame(function () {
