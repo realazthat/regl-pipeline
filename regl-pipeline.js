@@ -256,7 +256,7 @@ class UserType {
   }
 }
 
-class FloatSliderType extends UserType {
+class SliderType extends UserType {
   constructor ({min, max, initial, step}) {
     super();
     this.min = min;
@@ -265,39 +265,38 @@ class FloatSliderType extends UserType {
     this.step = step;
   }
 
-  parse ({$, element}) {
-    return {value: parseFloat($(element).val())};
+  $slider({$, element}) {
+    return $(element).find('input[name="slider"]');
   }
 
   unparse ({$, element, value}) {
-    $(element).val(value);
+    this.$slider({$, element}).val(value);
   }
 
   render ({nunjucks, name, value}) {
     let params = {name, value, min: this.min, max: this.max, step: this.step};
-    return nunjucks.renderString('<input type="range" min="{{min}}" max="{{max}} step="{{step}}" value="{{value}}" />', params);
+    return nunjucks.renderString(`
+      <form>
+        <input name="slider" type="range" min="{{min}}" max="{{max}}" step="{{step}}" value="{{value}}" oninput="this.form.view.value=this.value"/>
+        <input name="view" type="number" min="{{min}}" max="{{max}}" step="{{step}}" value="{{value}}" disabled="disabled"/>
+      </form>
+      `, params);
   }
 }
 
-class IntSliderType extends UserType {
-  constructor ({min, max, step}) {
-    super();
-    this.min = min;
-    this.max = max;
-    this.step = step;
-  }
-
+class FloatSliderType extends SliderType {
   parse ({$, element}) {
-    return {value: parseInt($(element).val())};
+    let value = this.$slider({$, element}).val();
+    value = parseFloat(value);
+    return {value};
   }
+}
 
-  unparse ({$, element, value}) {
-    $(element).val(value);
-  }
-
-  render ({nunjucks, name, value}) {
-    let params = {name, value, min: this.min, max: this.max, step: this.step};
-    return nunjucks.renderString('<input type="range" min="{{min}}" max="{{max}} step="{{step}}" value="{{value}}" />', params);
+class IntSliderType extends SliderType {
+  parse ({$, element}) {
+    let value = this.$slider({$, element}).val();
+    value = parseInt(value);
+    return {value};
   }
 }
 
