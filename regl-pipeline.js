@@ -1291,7 +1291,7 @@ class DAG {
             continue;
           }
 
-          let promise = Promise.resolve({node,outport});
+          let promise = Promise.resolve({node, outport});
 
           // console.log(`outport ${outport} compile:`,compile);
           // console.log(`dag.needsRecompilation({"${node}", "${outport}"}):`, dag.needsRecompilation({node, outport}));
@@ -1300,7 +1300,7 @@ class DAG {
             let context = new NodeExecutionContext({node, outport, dag, runtime: 'static'});
             promise = promise.then(function ({node, outport}) {
               return Promise.resolve(compile({context}))
-                      .then(function(compiled){
+                      .then(function (compiled) {
                         return Promise.resolve({compiled, node, outport});
                       });
             })
