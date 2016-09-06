@@ -52,6 +52,7 @@ $(document).ready(function () {
   dag.n('sink').i.in = dag.n('blur').o.out;
   dag.n('sink').i.inresolution = dag.n('blur').o.outresolution;
   dag.n('sink').i.inviewport = dag.n('blur').o.outviewport;
+  dag.n('sink').i = {in: dag.n('blur').o.out, inresolution: dag.n('blur').o.outresolution, inviewport: dag.n('blur').o.outviewport};
 
   // a container element to let us control dynamic attachments/properties.
   let $props = $('<div />').appendTo($('body'));

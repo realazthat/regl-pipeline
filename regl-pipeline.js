@@ -1291,17 +1291,20 @@ class DAG {
             continue;
           }
 
-          let promise = Promise.resolve();
+          let promise = Promise.resolve({node,outport});
 
           // console.log(`outport ${outport} compile:`,compile);
           // console.log(`dag.needsRecompilation({"${node}", "${outport}"}):`, dag.needsRecompilation({node, outport}));
           if (dag.needsRecompilation({node, outport})) {
             // TODO: should we clear the compiled cache now?
             let context = new NodeExecutionContext({node, outport, dag, runtime: 'static'});
-            promise = promise.then(function () {
-              return Promise.resolve(compile({context}));
+            promise = promise.then(function ({node, outport}) {
+              return Promise.resolve(compile({context}))
+                      .then(function(compiled){
+                        return Promise.resolve({compiled, node, outport});
+                      });
             })
-            .then(function (compiled) {
+            .then(function ({node, outport, compiled}) {
               dag.saveCompiled({node, outport, compiled});
               return Promise.resolve();
             });
