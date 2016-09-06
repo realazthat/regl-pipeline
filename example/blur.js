@@ -7,6 +7,7 @@ const $ = require('jquery');
 const pipeline = require('../regl-pipeline');
 const noflo = require('noflo');
 const nunjucks = require('nunjucks');
+const insertcss = require('insert-css');
 
 $(document).ready(function () {
   // put the canvas in front of everything, but don't let it interfere with the
@@ -71,6 +72,7 @@ $(document).ready(function () {
     .then(function () {
       // bind the properties to corresponding DOM inputs
       dag.renderProps({$, nunjucks, element: $props});
+      dag.theme({insertcss, theme: 'uplink'})
 
       // set a per-frame callback.
       regl.frame(function () {

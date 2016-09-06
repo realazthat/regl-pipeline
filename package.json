@@ -23,6 +23,7 @@
   "dependencies": {
     "array-range": "^1.0.1",
     "bower": "^1.6.9",
+    "brfs": "^1.4.3",
     "clone": "1.0.2",
     "cssy": "^2.2.0",
     "es6-error": "^3.0.1",
@@ -50,7 +51,8 @@
   },
   "browserify": {
     "transform": [
-      ["polymerize", { "match": "bower_components.*\\.html$"} ]
+      ["polymerize", { "match": "bower_components.*\\.html$"} ],
+      "brfs"
     ]
   },
   "keywords": [
